@@ -1,5 +1,9 @@
-﻿namespace Turtle.Contract.Models;
+﻿using Gaia.Errors;
+using Gaia.Services;
 
-public class TurtleGetResponse
+namespace Turtle.Contract.Models;
+
+public class TurtleGetResponse : IValidationErrors
 {
+    public ValidationError[] ValidationErrors { get; set; } = [];
 }

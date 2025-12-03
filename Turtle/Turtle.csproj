@@ -9,8 +9,10 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\..\Nestor\Nestor.Db.Sqlite\Nestor.Db.Sqlite.csproj" />
       <ProjectReference Include="..\..\Nestor\Nestor.Db\Nestor.Db.csproj" />
       <ProjectReference Include="..\..\Nestor\Nestor.SourceGenerator\Nestor.SourceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+      <ProjectReference Include="..\..\Zeus\Zeus\Zeus.csproj" />
       <ProjectReference Include="..\Turtle.Contract\Turtle.Contract.csproj" />
     </ItemGroup>
 

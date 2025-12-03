@@ -1,12 +1,7 @@
-using Nestor.Db.Models;
-using Turtle.Contract.Models;
+﻿namespace Turtle.Contract.Models;
 
-namespace Turtle.Models;
-
-[SourceEntity(nameof(Id))]
-public partial class CredentialEntity
+public class CreateCredential
 {
-    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Login { get; set; } = string.Empty;
     public string Key { get; set; } = string.Empty;
@@ -18,6 +13,5 @@ public partial class CredentialEntity
     public ushort Length { get; set; }
     public string Regex { get; set; } = string.Empty;
     public CredentialType Type { get; set; }
-    public uint OrderIndex { get; set; }
     public Guid? ParentId { get; set; }
 }

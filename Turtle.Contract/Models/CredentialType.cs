@@ -1,4 +1,4 @@
-namespace Turtle.Models;
+namespace Turtle.Contract.Models;
 
 public enum CredentialType : byte
 {
