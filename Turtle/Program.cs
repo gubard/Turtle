@@ -38,4 +38,5 @@ app.MapPost(RouteHelper.Post,
    .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
+await app.Services.MigrateDbAsync("turtle.migration");
 app.Run();
