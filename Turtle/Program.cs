@@ -6,12 +6,15 @@ using Turtle.Contract.Models;
 using Turtle.Contract.Services;
 using Turtle.Services;
 using Zeus.Helpers;
+using Zeus.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddAuthorization();
+builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddTransient<IStorageService, StorageService>();
 builder.Services.AddTransient<ICredentialService, CredentialService>();
 builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>((sp, options) =>
@@ -26,15 +29,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapPost(RouteHelper.Get,
         (TurtleGetRequest request, ICredentialService authenticationService, CancellationToken ct) =>
             authenticationService.GetAsync(request, ct))
+   .RequireAuthorization()
    .WithName(RouteHelper.GetName);
 
 app.MapPost(RouteHelper.Post,
         (TurtlePostRequest request, ICredentialService authenticationService, CancellationToken ct) =>
             authenticationService.PostAsync(request, ct))
+   .RequireAuthorization()
    .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
