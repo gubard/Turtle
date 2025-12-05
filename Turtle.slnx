@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Turtle.Contract/Turtle.Contract.csproj" />
+  <Project Path="Turtle/Turtle.csproj" />
+</Solution>
