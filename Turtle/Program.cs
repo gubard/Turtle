@@ -6,7 +6,7 @@ using Turtle.Contract.Models;
 using Turtle.Contract.Services;
 using Turtle.Services;
 using Zeus.Helpers;
-using Zeus.Models;
+using Zeus.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +14,31 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddTransient<IStorageService, StorageService>();
 builder.Services.AddTransient<ICredentialService, CredentialService>();
+builder.Services.AddTransient<IDbMigrator, DbMigrator>(sp => new(sp.GetRequiredService<IStorageService>().GetDbDirectory().Combine("Turtle")));
 builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>((sp, options) =>
-    options.UseSqlite($"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("turtle.db")}", x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly)));
+{
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+    var userId = httpContextAccessor.HttpContext.ThrowIfNull().GetUserId();
+    var dataSourceFile = sp.GetRequiredService<IStorageService>().GetDbDirectory().Combine("Turtle").ToFile($"{userId}.db");
+    options.UseSqlite($"Data Source={dataSourceFile}", x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly));
+
+    if (dataSourceFile.Exists)
+    {
+        return;
+    }
+
+    if (dataSourceFile.Directory?.Exists != true)
+    {
+        dataSourceFile.Directory?.Create();
+    }
+
+    using var context = new SqliteNestorDbContext(options.Options);
+    context.Database.Migrate();
+});
 
 var app = builder.Build();
 
@@ -44,6 +64,5 @@ app.MapPost(RouteHelper.Post,
    .RequireAuthorization()
    .WithName(RouteHelper.PostName);
 
-app.Services.CreateDbDirectory();
-await app.Services.MigrateDbAsync("turtle.migration");
-app.Run();
+await app.Services.GetRequiredService<IDbMigrator>().MigrateAsync(CancellationToken.None);
+await app.RunAsync();
