@@ -19,6 +19,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddTransient<IStorageService, StorageService>();
 builder.Services.AddTransient<ICredentialService, CredentialService>();
 builder.Services.AddTransient<IDbMigrator, DbMigrator>(sp => new(sp.GetRequiredService<IStorageService>().GetDbDirectory().Combine("Turtle")));
+
 builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>((sp, options) =>
 {
     var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
