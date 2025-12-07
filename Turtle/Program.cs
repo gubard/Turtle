@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Sqlite;
 using Turtle.Contract.Models;
 using Turtle.Contract.Services;
-using Turtle.Services;
 using Zeus.Helpers;
 using Zeus.Services;
 
@@ -17,7 +16,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddTransient<IStorageService, StorageService>();
-builder.Services.AddTransient<ICredentialService, CredentialService>();
+builder.Services.AddTransient<ICredentialService, EfCredentialService>();
 builder.Services.AddTransient<IDbMigrator, DbMigrator>(sp => new(sp.GetRequiredService<IStorageService>().GetDbDirectory().Combine("Turtle")));
 
 builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>((sp, options) =>

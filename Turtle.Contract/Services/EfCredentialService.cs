@@ -1,20 +1,28 @@
 ﻿using System.Collections.Frozen;
 using Gaia.Helpers;
 using Gaia.Models;
+using Gaia.Services;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Helpers;
 using Nestor.Db.Models;
 using Turtle.Contract.Models;
-using Turtle.Contract.Services;
-using Turtle.Models;
 
-namespace Turtle.Services;
+namespace Turtle.Contract.Services;
 
-public class CredentialService : ICredentialService
+public interface ICredentialService : IService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
+public interface IHttpCredentialService : ICredentialService, IHttpService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
+
+public interface IEfCredentialService : ICredentialService
+{
+    ValueTask SaveEventsAsync(ReadOnlyMemory<EventEntity> events, CancellationToken ct);
+    ValueTask<long> GetLastIdAsync(CancellationToken ct);
+}
+
+public class EfCredentialService : IEfCredentialService
 {
     private readonly DbContext _dbContext;
 
-    public CredentialService(DbContext dbContext)
+    public EfCredentialService(DbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -43,17 +51,22 @@ public class CredentialService : ICredentialService
 
         var credentials = await CredentialEntity.GetCredentialEntitysAsync(_dbContext.Set<EventEntity>().Where(x => query.Contains(x.EntityId)), ct);
         var credentialsDictionary = credentials.ToDictionary(x => x.Id).ToFrozenDictionary();
-        response.Roots.AddRange(credentials.Where(x => x.ParentId is null).Select(x => ToCredential(x)));
+        response.Roots.AddRange(credentials.Where(x => x.ParentId is null).Select(ToCredential));
 
         foreach (var id in request.GetChildrenIds)
         {
-            response.Children.Add(id, credentials.Where(y => y.ParentId == id).Select(y => ToCredential(y)).ToList());
+            response.Children.Add(id, credentials.Where(y => y.ParentId == id).Select(ToCredential).ToList());
         }
 
         foreach (var id in request.GetParentsIds)
         {
             AddParents(response, id, credentialsDictionary);
             response.Parents[id].Reverse();
+        }
+
+        if (request.LastId != -1)
+        {
+            response.Events = await _dbContext.Set<EventEntity>().Where(x => x.Id > request.LastId).ToArrayAsync(ct);
         }
 
         return response;
@@ -75,7 +88,7 @@ public class CredentialService : ICredentialService
     private void AddParents(TurtleGetResponse response, Guid rootId, Guid parentId, FrozenDictionary<Guid, CredentialEntity> credentials)
     {
         var credential = ToCredential(credentials[parentId]);
-        response.Parents.Add(rootId, [credential]);
+        response.Parents[rootId].Add(credential);
 
         if (credential.ParentId is null)
         {
@@ -112,10 +125,34 @@ public class CredentialService : ICredentialService
         await DeleteAsync(request.DeleteIds, ct);
         await CreateAsync(request.CreateCredentials, ct);
         await EditAsync(request.EditCredentials, ct);
-        await ChangeOrderAsync(request.ChangeOrders,  response.ValidationErrors, ct);
+        await ChangeOrderAsync(request.ChangeOrders, response.ValidationErrors, ct);
         await _dbContext.SaveChangesAsync(ct);
+        response.Events = await _dbContext.Set<EventEntity>().Where(x => x.Id > request.LastLocalId).ToArrayAsync(ct);
 
         return response;
+    }
+
+    public async ValueTask SaveEventsAsync(ReadOnlyMemory<EventEntity> events, CancellationToken ct)
+    {
+        if (events.IsEmpty)
+        {
+            return;
+        }
+
+        await _dbContext.AddRangeAsync(events.ToArray(), ct);
+        await _dbContext.SaveChangesAsync(ct);
+    }
+
+    public async ValueTask<long> GetLastIdAsync(CancellationToken ct)
+    {
+        var lastId = await _dbContext.Set<EventEntity>().MaxAsync(x => (long?)x.Id, ct);
+
+        if (lastId is null)
+        {
+            return 0;
+        }
+
+        return lastId.Value;
     }
 
     private async ValueTask ChangeOrderAsync(ChangeOrder[] changeOrders, List<ValidationError> errors, CancellationToken ct)
@@ -283,7 +320,7 @@ public class CredentialService : ICredentialService
                      t.EntityGuidValue
                  FROM
                      EventEntity AS t
-                 INNER JOIN hierarchy h ON t.EntityGuidValue = h.EntityId
+                 INNER JOIN hierarchy h ON h.EntityGuidValue = t.EntityId
                  WHERE
                      t.EntityProperty = 'ParentId'
                    AND t.EntityType = 'CredentialEntity'

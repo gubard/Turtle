@@ -1,7 +1,6 @@
 using Nestor.Db.Models;
-using Turtle.Contract.Models;
 
-namespace Turtle.Models;
+namespace Turtle.Contract.Models;
 
 [SourceEntity(nameof(Id))]
 public partial class CredentialEntity
