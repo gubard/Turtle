@@ -1,6 +1,8 @@
-﻿namespace Turtle.Contract.Models;
+﻿using Gaia.Services;
 
-public class TurtlePostRequest
+namespace Turtle.Contract.Models;
+
+public class TurtlePostRequest : IPostRequest
 {
     public long LastLocalId { get; set; }
     public Guid[] DeleteIds { get; set; } = [];

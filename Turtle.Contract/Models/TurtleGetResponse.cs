@@ -4,7 +4,7 @@ using Nestor.Db.Models;
 
 namespace Turtle.Contract.Models;
 
-public class TurtleGetResponse : IValidationErrors
+public class TurtleGetResponse : IValidationErrors, IResponse
 {
     public List<Credential> Roots { get; set; } = [];
     public Dictionary<Guid, List<Credential>> Children { get; set; } = [];

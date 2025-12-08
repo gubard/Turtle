@@ -1,6 +1,8 @@
-﻿namespace Turtle.Contract.Models;
+﻿using Gaia.Services;
 
-public class TurtleGetRequest
+namespace Turtle.Contract.Models;
+
+public class TurtleGetRequest : IGetRequest
 {
     public bool IsGetRoots { get; set; }
     public Guid[] GetChildrenIds { get; set; } = [];
