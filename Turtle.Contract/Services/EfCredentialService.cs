@@ -161,6 +161,20 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
         return response;
     }
 
+    public override TurtlePostResponse Post(TurtlePostRequest request)
+    {
+        var response = new TurtlePostResponse();
+        Delete(request.DeleteIds);
+        Create(request.CreateCredentials);
+        Edit(request.EditCredentials);
+        ChangeOrder(request.ChangeOrders, response.ValidationErrors);
+        DbContext.SaveChanges();
+        response.Events = DbContext.Set<EventEntity>()
+           .Where(x => x.Id > request.LastLocalId).ToArray();
+
+        return response;
+    }
+
     private async ValueTask ChangeOrderAsync(ChangeOrder[] changeOrders,
         List<ValidationError> errors, CancellationToken ct)
     {
@@ -222,7 +236,9 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
                 ? items.Where(x => x.OrderIndex > item.OrderIndex)
                 : items.Where(x => x.OrderIndex >= item.OrderIndex);
 
-            var newOrder = usedItems.Concat(inserts).ToFrozenSet();
+            var newOrder = inserts
+               .Concat(usedItems.Where(x => !insertIds.Contains(x.Id)))
+               .ToFrozenSet();
 
             foreach (var newItem in newOrder)
             {
@@ -323,6 +339,172 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
 
         return CredentialEntity.AddCredentialEntitysAsync(DbContext, "Service",
             ct, entities.ToArray());
+    }
+
+    private void ChangeOrder(ChangeOrder[] changeOrders,
+        List<ValidationError> errors)
+    {
+        if (changeOrders.Length == 0)
+        {
+            return;
+        }
+
+        var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct()
+           .ToFrozenSet();
+        var insertItems = CredentialEntity.GetCredentialEntitys(
+            DbContext.Set<EventEntity>()
+               .Where(x => insertIds.Contains(x.EntityId)));
+        var insertItemsDictionary =
+            insertItems.ToDictionary(x => x.Id).ToFrozenDictionary();
+        var startIds = changeOrders.Select(x => x.StartId).Distinct()
+           .ToFrozenSet();
+        var startItems = CredentialEntity.GetCredentialEntitys(
+            DbContext.Set<EventEntity>()
+               .Where(x => startIds.Contains(x.EntityId)));
+        var startItemsDictionary =
+            startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
+        var parentItems = startItems.Select(x => x.ParentId).Distinct()
+           .ToFrozenSet();
+        var query = DbContext.Set<EventEntity>()
+           .GetProperty(nameof(CredentialEntity),
+                nameof(CredentialEntity.ParentId))
+           .Where(x => parentItems.Contains(x.EntityGuidValue))
+           .Select(x => x.EntityId).Distinct();
+        var siblings = CredentialEntity.GetCredentialEntitys(
+            DbContext.Set<EventEntity>()
+               .Where(x => query.Contains(x.EntityId)));
+        var edits = new List<EditCredentialEntity>();
+
+        for (var index = 0; index < changeOrders.Length; index++)
+        {
+            var changeOrder = changeOrders[index];
+
+            var inserts = changeOrder.InsertIds
+               .Select(x => insertItemsDictionary[x]).ToFrozenSet();
+
+            if (!startItemsDictionary.TryGetValue(changeOrder.StartId,
+                    out var item))
+            {
+                errors.Add(
+                    new NotFoundValidationError(changeOrder.StartId
+                       .ToString()));
+
+                continue;
+            }
+
+            var startIndex = changeOrder.IsAfter
+                ? item.OrderIndex + 1
+                : item.OrderIndex;
+            var items = siblings.Where(x => x.ParentId == item.ParentId)
+               .OrderBy(x => x.OrderIndex);
+
+            var usedItems = changeOrder.IsAfter
+                ? items.Where(x => x.OrderIndex > item.OrderIndex)
+                : items.Where(x => x.OrderIndex >= item.OrderIndex);
+
+            var newOrder = inserts
+               .Concat(usedItems.Where(x => !insertIds.Contains(x.Id)))
+               .ToFrozenSet();
+
+            foreach (var newItem in newOrder)
+            {
+                edits.Add(new(newItem.Id)
+                {
+                    IsEditOrderIndex = startIndex != newItem.OrderIndex,
+                    OrderIndex = startIndex++,
+                    IsEditParentId = newItem.ParentId != item.ParentId,
+                    ParentId = item.ParentId,
+                });
+            }
+        }
+
+        CredentialEntity.EditCredentialEntitys(DbContext, "Service",
+            edits.ToArray());
+    }
+
+    private void Delete(Guid[] ids)
+    {
+        if (ids.Length == 0)
+        {
+            return;
+        }
+
+        CredentialEntity.DeleteCredentialEntitys(DbContext,
+            "Service", ids);
+    }
+
+    private void Edit(EditCredential[] edits)
+    {
+        if (edits.Length == 0)
+        {
+            return;
+        }
+
+        var editEntities =
+            new Span<EditCredentialEntity>(
+                new EditCredentialEntity[edits.Length]);
+
+        for (var index = 0; index < edits.Length; index++)
+        {
+            var editCredential = edits[index];
+            editEntities[index] = new(editCredential.Id)
+            {
+                CustomAvailableCharacters =
+                    editCredential.CustomAvailableCharacters,
+                IsAvailableLowerLatin = editCredential.IsAvailableLowerLatin,
+                IsAvailableNumber = editCredential.IsAvailableNumber,
+                IsAvailableSpecialSymbols =
+                    editCredential.IsAvailableSpecialSymbols,
+                IsAvailableUpperLatin = editCredential.IsAvailableUpperLatin,
+                Key = editCredential.Key,
+                Length = editCredential.Length,
+                Login = editCredential.Login,
+                Name = editCredential.Name,
+                Regex = editCredential.Regex,
+                Type = editCredential.Type,
+                ParentId = editCredential.ParentId,
+            };
+        }
+
+        CredentialEntity.EditCredentialEntitys(DbContext,
+            "Service", editEntities.ToArray());
+    }
+
+    private void Create(Credential[] creates)
+    {
+        if (creates.Length == 0)
+        {
+            return;
+        }
+
+        var entities =
+            new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
+
+        for (var index = 0; index < creates.Length; index++)
+        {
+            var createCredential = creates[index];
+            entities[index] = new()
+            {
+                CustomAvailableCharacters =
+                    createCredential.CustomAvailableCharacters,
+                IsAvailableLowerLatin = createCredential.IsAvailableLowerLatin,
+                Id = createCredential.Id,
+                IsAvailableNumber = createCredential.IsAvailableNumber,
+                IsAvailableSpecialSymbols =
+                    createCredential.IsAvailableSpecialSymbols,
+                IsAvailableUpperLatin = createCredential.IsAvailableUpperLatin,
+                Key = createCredential.Key,
+                Length = createCredential.Length,
+                Login = createCredential.Login,
+                Name = createCredential.Name,
+                Regex = createCredential.Regex,
+                Type = createCredential.Type,
+                ParentId = createCredential.ParentId,
+            };
+        }
+
+        CredentialEntity.AddCredentialEntitys(DbContext, "Service",
+            entities.ToArray());
     }
 
     private string CreateSqlForAllChildren(params Guid[] ids)
