@@ -1,6 +1,6 @@
 ﻿namespace Turtle.Contract.Models;
 
-public class ChangeOrder
+public class CredentialChangeOrder
 {
     public Guid StartId { get; set; }
     public Guid[] InsertIds { get; set; } = [];
