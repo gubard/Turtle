@@ -12,55 +12,67 @@ namespace Turtle.Contract.Services;
 
 public interface IHttpCredentialService : ICredentialService;
 
-public interface ICredentialService : IService<TurtleGetRequest,
-    TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
+public interface ICredentialService
+    : IService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
-public interface IEfCredentialService : ICredentialService,
-    IEfService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse,
-        TurtlePostResponse>;
+public interface IEfCredentialService
+    : ICredentialService,
+        IEfService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
-public sealed class EfCredentialService : EfService<TurtleGetRequest,
-    TurtlePostRequest, TurtleGetResponse,
-    TurtlePostResponse>, IEfCredentialService
+public sealed class EfCredentialService
+    : EfService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
+        IEfCredentialService
 {
     private readonly GaiaValues _gaiaValues;
 
-    public EfCredentialService(DbContext dbContext, GaiaValues gaiaValues) : base(dbContext)
+    public EfCredentialService(DbContext dbContext, GaiaValues gaiaValues)
+        : base(dbContext)
     {
         _gaiaValues = gaiaValues;
     }
 
     public override async ValueTask<TurtleGetResponse> GetAsync(
         TurtleGetRequest request,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
-        var credentials = await CredentialEntity.GetEntitiesAsync(
-            CreateQuery(request), ct);
+        var credentials = await CredentialEntity.GetEntitiesAsync(CreateQuery(request), ct);
 
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
         {
-            response.Events = await DbContext.Set<EventEntity>()
-               .Where(x => x.Id > request.LastId).ToArrayAsync(ct);
+            response.Events = await DbContext
+                .Set<EventEntity>()
+                .Where(x => x.Id > request.LastId)
+                .ToArrayAsync(ct);
         }
 
         return response;
     }
 
     public override async ValueTask<TurtlePostResponse> PostAsync(
-        TurtlePostRequest request, CancellationToken ct)
+        TurtlePostRequest request,
+        CancellationToken ct
+    )
     {
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
         await CreateAsync(request.CreateCredentials, ct);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
-        await CredentialEntity.EditEntitiesAsync(DbContext, _gaiaValues.UserId.ToString(),
-            editEntities.ToArray(), ct);
+        await CredentialEntity.EditEntitiesAsync(
+            DbContext,
+            _gaiaValues.UserId.ToString(),
+            editEntities.ToArray(),
+            ct
+        );
         await DeleteAsync(request.DeleteIds, ct);
         await DbContext.SaveChangesAsync(ct);
-        response.Events = await DbContext.Set<EventEntity>().Where(x => x.Id > request.LastLocalId).ToArrayAsync(ct);
+        response.Events = await DbContext
+            .Set<EventEntity>()
+            .Where(x => x.Id > request.LastLocalId)
+            .ToArrayAsync(ct);
 
         return response;
     }
@@ -72,35 +84,46 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
         Create(request.CreateCredentials);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
-        CredentialEntity.EditEntities(DbContext, _gaiaValues.UserId.ToString(), editEntities.ToArray());
+        CredentialEntity.EditEntities(
+            DbContext,
+            _gaiaValues.UserId.ToString(),
+            editEntities.ToArray()
+        );
         Delete(request.DeleteIds);
         DbContext.SaveChanges();
-        response.Events = DbContext.Set<EventEntity>().Where(x => x.Id > request.LastLocalId).ToArray();
+        response.Events = DbContext
+            .Set<EventEntity>()
+            .Where(x => x.Id > request.LastLocalId)
+            .ToArray();
 
         return response;
     }
 
     public override TurtleGetResponse Get(TurtleGetRequest request)
     {
-        var credentials = CredentialEntity.GetEntities(
-            CreateQuery(request));
+        var credentials = CredentialEntity.GetEntities(CreateQuery(request));
 
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
         {
-            response.Events = DbContext.Set<EventEntity>()
-               .Where(x => x.Id > request.LastId).ToArray();
+            response.Events = DbContext
+                .Set<EventEntity>()
+                .Where(x => x.Id > request.LastId)
+                .ToArray();
         }
 
         return response;
     }
 
-    private void AddParents(TurtleGetResponse response, Guid rootId,
-        FrozenDictionary<Guid, CredentialEntity> credentials)
+    private void AddParents(
+        TurtleGetResponse response,
+        Guid rootId,
+        FrozenDictionary<Guid, CredentialEntity> credentials
+    )
     {
         var credential = ToCredential(credentials[rootId]);
-        response.Parents.Add(rootId, [credential,]);
+        response.Parents.Add(rootId, [credential]);
 
         if (credential.ParentId is null)
         {
@@ -110,8 +133,12 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
         AddParents(response, rootId, credential.ParentId.Value, credentials);
     }
 
-    private void AddParents(TurtleGetResponse response, Guid rootId,
-        Guid parentId, FrozenDictionary<Guid, CredentialEntity> credentials)
+    private void AddParents(
+        TurtleGetResponse response,
+        Guid rootId,
+        Guid parentId,
+        FrozenDictionary<Guid, CredentialEntity> credentials
+    )
     {
         var credential = ToCredential(credentials[parentId]);
         response.Parents[rootId].Add(credential);
@@ -145,24 +172,28 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
         };
     }
 
-    private TurtleGetResponse CreateResponse(TurtleGetRequest request,
-        CredentialEntity[] credentials)
+    private TurtleGetResponse CreateResponse(
+        TurtleGetRequest request,
+        CredentialEntity[] credentials
+    )
     {
         var response = new TurtleGetResponse();
-        var credentialsDictionary =
-            credentials.ToDictionary(x => x.Id).ToFrozenDictionary();
+        var credentialsDictionary = credentials.ToDictionary(x => x.Id).ToFrozenDictionary();
 
         if (request.IsGetRoots)
         {
-            response.Roots = credentials.Where(x => x.ParentId is null)
-               .Select(ToCredential).ToArray();
+            response.Roots = credentials
+                .Where(x => x.ParentId is null)
+                .Select(ToCredential)
+                .ToArray();
         }
 
         foreach (var id in request.GetChildrenIds)
         {
-            response.Children.Add(id,
-                credentials.Where(y => y.ParentId == id).Select(ToCredential)
-                   .ToList());
+            response.Children.Add(
+                id,
+                credentials.Where(y => y.ParentId == id).Select(ToCredential).ToList()
+            );
         }
 
         foreach (var id in request.GetParentsIds)
@@ -176,38 +207,42 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
 
     private IQueryable<EventEntity> CreateQuery(TurtleGetRequest request)
     {
-        var childrenIds =
-            request.GetChildrenIds.Select(x => (Guid?)x).ToFrozenSet();
-        var query = DbContext.Set<EventEntity>().Where(x => x.Id == -1)
-           .Select(x => x.EntityId);
+        var childrenIds = request.GetChildrenIds.Select(x => (Guid?)x).ToFrozenSet();
+        var query = DbContext.Set<EventEntity>().Where(x => x.Id == -1).Select(x => x.EntityId);
 
         if (request.IsGetRoots)
         {
-            query = query.Concat(DbContext.Set<EventEntity>()
-               .GetProperty(nameof(CredentialEntity),
-                    nameof(CredentialEntity.ParentId))
-               .Where(x => x.EntityGuidValue == null).Distinct()
-               .Select(x => x.EntityId));
+            query = query.Concat(
+                DbContext
+                    .Set<EventEntity>()
+                    .GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
+                    .Where(x => x.EntityGuidValue == null)
+                    .Distinct()
+                    .Select(x => x.EntityId)
+            );
         }
 
         if (request.GetChildrenIds.Length != 0)
         {
-            query = query.Concat(DbContext.Set<EventEntity>()
-               .GetProperty(nameof(CredentialEntity),
-                    nameof(CredentialEntity.ParentId))
-               .Where(x => childrenIds.Contains(x.EntityGuidValue)).Distinct()
-               .Select(x => x.EntityId));
+            query = query.Concat(
+                DbContext
+                    .Set<EventEntity>()
+                    .GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
+                    .Where(x => childrenIds.Contains(x.EntityGuidValue))
+                    .Distinct()
+                    .Select(x => x.EntityId)
+            );
         }
 
         if (request.GetParentsIds.Length != 0)
         {
             var sql = CreateSqlForAllChildren(request.GetParentsIds);
-            query = query.Concat(DbContext.Set<TempEntity>().FromSqlRaw(sql)
-               .Select(x => x.EntityId));
+            query = query.Concat(
+                DbContext.Set<TempEntity>().FromSqlRaw(sql).Select(x => x.EntityId)
+            );
         }
 
-        return DbContext.Set<EventEntity>()
-           .Where(x => query.Contains(x.EntityId));
+        return DbContext.Set<EventEntity>().Where(x => query.Contains(x.EntityId));
     }
 
     private ValueTask DeleteAsync(Guid[] ids, CancellationToken ct)
@@ -217,7 +252,12 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
             return ValueTask.CompletedTask;
         }
 
-        return CredentialEntity.DeleteEntitiesAsync(DbContext, _gaiaValues.UserId.ToString(), ct, ids);
+        return CredentialEntity.DeleteEntitiesAsync(
+            DbContext,
+            _gaiaValues.UserId.ToString(),
+            ct,
+            ids
+        );
     }
 
     private void Edit(EditCredential[] edits, List<EditCredentialEntity> editEntities)
@@ -226,42 +266,35 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
         {
             foreach (var id in edit.Ids)
             {
-                editEntities.Add(new(id)
-                {
-                    CustomAvailableCharacters =
-                        edit.CustomAvailableCharacters,
-                    IsEditCustomAvailableCharacters =
-                        edit.IsEditCustomAvailableCharacters,
-                    IsAvailableLowerLatin =
-                        edit.IsAvailableLowerLatin,
-                    IsEditIsAvailableLowerLatin =
-                        edit.IsEditIsAvailableLowerLatin,
-                    IsAvailableNumber = edit.IsAvailableNumber,
-                    IsEditIsAvailableNumber =
-                        edit.IsEditIsAvailableNumber,
-                    IsAvailableSpecialSymbols =
-                        edit.IsAvailableSpecialSymbols,
-                    IsEditIsAvailableSpecialSymbols =
-                        edit.IsEditIsAvailableSpecialSymbols,
-                    IsAvailableUpperLatin =
-                        edit.IsAvailableUpperLatin,
-                    IsEditIsAvailableUpperLatin =
-                        edit.IsEditIsAvailableUpperLatin,
-                    Key = edit.Key,
-                    IsEditKey = edit.IsEditKey,
-                    Length = edit.Length,
-                    IsEditLength = edit.IsEditLength,
-                    Login = edit.Login,
-                    IsEditLogin = edit.IsEditLogin,
-                    Name = edit.Name,
-                    IsEditName = edit.IsEditName,
-                    Regex = edit.Regex,
-                    IsEditRegex = edit.IsEditRegex,
-                    Type = edit.Type,
-                    IsEditType = edit.IsEditType,
-                    ParentId = edit.ParentId,
-                    IsEditParentId = edit.IsEditParentId,
-                });
+                editEntities.Add(
+                    new(id)
+                    {
+                        CustomAvailableCharacters = edit.CustomAvailableCharacters,
+                        IsEditCustomAvailableCharacters = edit.IsEditCustomAvailableCharacters,
+                        IsAvailableLowerLatin = edit.IsAvailableLowerLatin,
+                        IsEditIsAvailableLowerLatin = edit.IsEditIsAvailableLowerLatin,
+                        IsAvailableNumber = edit.IsAvailableNumber,
+                        IsEditIsAvailableNumber = edit.IsEditIsAvailableNumber,
+                        IsAvailableSpecialSymbols = edit.IsAvailableSpecialSymbols,
+                        IsEditIsAvailableSpecialSymbols = edit.IsEditIsAvailableSpecialSymbols,
+                        IsAvailableUpperLatin = edit.IsAvailableUpperLatin,
+                        IsEditIsAvailableUpperLatin = edit.IsEditIsAvailableUpperLatin,
+                        Key = edit.Key,
+                        IsEditKey = edit.IsEditKey,
+                        Length = edit.Length,
+                        IsEditLength = edit.IsEditLength,
+                        Login = edit.Login,
+                        IsEditLogin = edit.IsEditLogin,
+                        Name = edit.Name,
+                        IsEditName = edit.IsEditName,
+                        Regex = edit.Regex,
+                        IsEditRegex = edit.IsEditRegex,
+                        Type = edit.Type,
+                        IsEditType = edit.IsEditType,
+                        ParentId = edit.ParentId,
+                        IsEditParentId = edit.IsEditParentId,
+                    }
+                );
             }
         }
     }
@@ -273,21 +306,18 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
             return ValueTask.CompletedTask;
         }
 
-        var entities =
-            new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
+        var entities = new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
 
         for (var index = 0; index < creates.Length; index++)
         {
             var createCredential = creates[index];
             entities[index] = new()
             {
-                CustomAvailableCharacters =
-                    createCredential.CustomAvailableCharacters,
+                CustomAvailableCharacters = createCredential.CustomAvailableCharacters,
                 IsAvailableLowerLatin = createCredential.IsAvailableLowerLatin,
                 Id = createCredential.Id,
                 IsAvailableNumber = createCredential.IsAvailableNumber,
-                IsAvailableSpecialSymbols =
-                    createCredential.IsAvailableSpecialSymbols,
+                IsAvailableSpecialSymbols = createCredential.IsAvailableSpecialSymbols,
                 IsAvailableUpperLatin = createCredential.IsAvailableUpperLatin,
                 Key = createCredential.Key,
                 Length = createCredential.Length,
@@ -299,82 +329,81 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
             };
         }
 
-        return CredentialEntity.AddEntitiesAsync(DbContext, $"{_gaiaValues.UserId}", ct, entities.ToArray());
+        return CredentialEntity.AddEntitiesAsync(
+            DbContext,
+            $"{_gaiaValues.UserId}",
+            ct,
+            entities.ToArray()
+        );
     }
 
-    private void ChangeOrder(CredentialChangeOrder[] changeOrders,
-        List<ValidationError> errors, List<EditCredentialEntity> editEntities)
+    private void ChangeOrder(
+        CredentialChangeOrder[] changeOrders,
+        List<ValidationError> errors,
+        List<EditCredentialEntity> editEntities
+    )
     {
         if (changeOrders.Length == 0)
         {
             return;
         }
 
-        var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct()
-           .ToFrozenSet();
+        var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct().ToFrozenSet();
         var insertItems = CredentialEntity.GetEntities(
-            DbContext.Set<EventEntity>()
-               .Where(x => insertIds.Contains(x.EntityId)));
-        var insertItemsDictionary =
-            insertItems.ToDictionary(x => x.Id).ToFrozenDictionary();
-        var startIds = changeOrders.Select(x => x.StartId).Distinct()
-           .ToFrozenSet();
+            DbContext.Set<EventEntity>().Where(x => insertIds.Contains(x.EntityId))
+        );
+        var insertItemsDictionary = insertItems.ToDictionary(x => x.Id).ToFrozenDictionary();
+        var startIds = changeOrders.Select(x => x.StartId).Distinct().ToFrozenSet();
         var startItems = CredentialEntity.GetEntities(
-            DbContext.Set<EventEntity>()
-               .Where(x => startIds.Contains(x.EntityId)));
-        var startItemsDictionary =
-            startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
-        var parentItems = startItems.Select(x => x.ParentId).Distinct()
-           .ToFrozenSet();
-        var query = DbContext.Set<EventEntity>()
-           .GetProperty(nameof(CredentialEntity),
-                nameof(CredentialEntity.ParentId))
-           .Where(x => parentItems.Contains(x.EntityGuidValue))
-           .Select(x => x.EntityId).Distinct();
+            DbContext.Set<EventEntity>().Where(x => startIds.Contains(x.EntityId))
+        );
+        var startItemsDictionary = startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
+        var parentItems = startItems.Select(x => x.ParentId).Distinct().ToFrozenSet();
+        var query = DbContext
+            .Set<EventEntity>()
+            .GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
+            .Where(x => parentItems.Contains(x.EntityGuidValue))
+            .Select(x => x.EntityId)
+            .Distinct();
         var siblings = CredentialEntity.GetEntities(
-            DbContext.Set<EventEntity>()
-               .Where(x => query.Contains(x.EntityId)));
+            DbContext.Set<EventEntity>().Where(x => query.Contains(x.EntityId))
+        );
 
         for (var index = 0; index < changeOrders.Length; index++)
         {
             var changeOrder = changeOrders[index];
 
-            var inserts = changeOrder.InsertIds
-               .Select(x => insertItemsDictionary[x]).ToFrozenSet();
+            var inserts = changeOrder.InsertIds.Select(x => insertItemsDictionary[x]).ToFrozenSet();
 
-            if (!startItemsDictionary.TryGetValue(changeOrder.StartId,
-                out var item))
+            if (!startItemsDictionary.TryGetValue(changeOrder.StartId, out var item))
             {
-                errors.Add(
-                    new NotFoundValidationError(changeOrder.StartId
-                       .ToString()));
+                errors.Add(new NotFoundValidationError(changeOrder.StartId.ToString()));
 
                 continue;
             }
 
-            var startIndex = changeOrder.IsAfter
-                ? item.OrderIndex + 1
-                : item.OrderIndex;
-            var items = siblings.Where(x => x.ParentId == item.ParentId)
-               .OrderBy(x => x.OrderIndex);
+            var startIndex = changeOrder.IsAfter ? item.OrderIndex + 1 : item.OrderIndex;
+            var items = siblings.Where(x => x.ParentId == item.ParentId).OrderBy(x => x.OrderIndex);
 
             var usedItems = changeOrder.IsAfter
                 ? items.Where(x => x.OrderIndex > item.OrderIndex)
                 : items.Where(x => x.OrderIndex >= item.OrderIndex);
 
             var newOrder = inserts
-               .Concat(usedItems.Where(x => !insertIds.Contains(x.Id)))
-               .ToFrozenSet();
+                .Concat(usedItems.Where(x => !insertIds.Contains(x.Id)))
+                .ToFrozenSet();
 
             foreach (var newItem in newOrder)
             {
-                editEntities.Add(new(newItem.Id)
-                {
-                    IsEditOrderIndex = startIndex != newItem.OrderIndex,
-                    OrderIndex = startIndex++,
-                    IsEditParentId = newItem.ParentId != item.ParentId,
-                    ParentId = item.ParentId,
-                });
+                editEntities.Add(
+                    new(newItem.Id)
+                    {
+                        IsEditOrderIndex = startIndex != newItem.OrderIndex,
+                        OrderIndex = startIndex++,
+                        IsEditParentId = newItem.ParentId != item.ParentId,
+                        ParentId = item.ParentId,
+                    }
+                );
             }
         }
     }
@@ -396,21 +425,18 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
             return;
         }
 
-        var entities =
-            new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
+        var entities = new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
 
         for (var index = 0; index < creates.Length; index++)
         {
             var createCredential = creates[index];
             entities[index] = new()
             {
-                CustomAvailableCharacters =
-                    createCredential.CustomAvailableCharacters,
+                CustomAvailableCharacters = createCredential.CustomAvailableCharacters,
                 IsAvailableLowerLatin = createCredential.IsAvailableLowerLatin,
                 Id = createCredential.Id,
                 IsAvailableNumber = createCredential.IsAvailableNumber,
-                IsAvailableSpecialSymbols =
-                    createCredential.IsAvailableSpecialSymbols,
+                IsAvailableSpecialSymbols = createCredential.IsAvailableSpecialSymbols,
                 IsAvailableUpperLatin = createCredential.IsAvailableUpperLatin,
                 Key = createCredential.Key,
                 Length = createCredential.Length,
@@ -427,11 +453,9 @@ public sealed class EfCredentialService : EfService<TurtleGetRequest,
 
     private string CreateSqlForAllChildren(params Guid[] ids)
     {
-        var idsString = ids.Select(i => i.ToString().ToUpperInvariant())
-           .JoinString("', '");
+        var idsString = ids.Select(i => i.ToString().ToUpperInvariant()).JoinString("', '");
 
-        return
-            $"""
+        return $"""
             WITH RECURSIVE hierarchy(Id, EntityId, EntityGuidValue) AS (
                 SELECT
                     Id,

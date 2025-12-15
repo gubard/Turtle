@@ -30,8 +30,14 @@ public partial class TurtleJsonContext : JsonSerializerContext
                     TypeDiscriminatorPropertyName = "$type",
                     DerivedTypes =
                     {
-                        new(typeof(AlreadyExistsValidationError), typeof(AlreadyExistsValidationError).FullName!),
-                        new(typeof(NotFoundValidationError), typeof(NotFoundValidationError).FullName!),
+                        new(
+                            typeof(AlreadyExistsValidationError),
+                            typeof(AlreadyExistsValidationError).FullName!
+                        ),
+                        new(
+                            typeof(NotFoundValidationError),
+                            typeof(NotFoundValidationError).FullName!
+                        ),
                     },
                 };
             }
