@@ -255,8 +255,8 @@ public sealed class EfCredentialService
         return CredentialEntity.DeleteEntitiesAsync(
             DbContext,
             _gaiaValues.UserId.ToString(),
-            ct,
-            ids
+            ids,
+            ct
         );
     }
 
@@ -332,8 +332,8 @@ public sealed class EfCredentialService
         return CredentialEntity.AddEntitiesAsync(
             DbContext,
             $"{_gaiaValues.UserId}",
-            ct,
-            entities.ToArray()
+            entities.ToArray(),
+            ct
         );
     }
 
