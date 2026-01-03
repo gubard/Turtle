@@ -237,9 +237,7 @@ public sealed class EfCredentialService
         if (request.GetParentsIds.Length != 0)
         {
             var sql = CreateSqlForAllChildren(request.GetParentsIds);
-            query = query.Concat(
-                DbContext.Set<TempEntity>().FromSqlRaw(sql).Select(x => x.EntityId)
-            );
+            query = query.Concat(DbContext.Database.SqlQueryRaw<Guid>(sql));
         }
 
         return DbContext.Set<EventEntity>().Where(x => query.Contains(x.EntityId));
