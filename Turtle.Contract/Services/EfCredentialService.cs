@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
 using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
@@ -31,7 +32,15 @@ public sealed class EfCredentialService
         _gaiaValues = gaiaValues;
     }
 
-    public override async ValueTask<TurtleGetResponse> GetAsync(
+    public override ConfiguredValueTaskAwaitable<TurtleGetResponse> GetAsync(
+        TurtleGetRequest request,
+        CancellationToken ct
+    )
+    {
+        return GetCore(request, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<TurtleGetResponse> GetCore(
         TurtleGetRequest request,
         CancellationToken ct
     )
@@ -50,7 +59,15 @@ public sealed class EfCredentialService
         return response;
     }
 
-    public override async ValueTask<TurtlePostResponse> PostAsync(
+    public override ConfiguredValueTaskAwaitable<TurtlePostResponse> PostAsync(
+        TurtlePostRequest request,
+        CancellationToken ct
+    )
+    {
+        return PostCore(request, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<TurtlePostResponse> PostCore(
         TurtlePostRequest request,
         CancellationToken ct
     )
@@ -235,11 +252,11 @@ public sealed class EfCredentialService
         return DbContext.Events.Where(x => query.Contains(x.EntityId));
     }
 
-    private ValueTask DeleteAsync(Guid[] ids, CancellationToken ct)
+    private ConfiguredValueTaskAwaitable DeleteAsync(Guid[] ids, CancellationToken ct)
     {
         if (ids.Length == 0)
         {
-            return ValueTask.CompletedTask;
+            return TaskHelper.ConfiguredCompletedTask;
         }
 
         return CredentialEntity.DeleteEntitiesAsync(
@@ -289,11 +306,11 @@ public sealed class EfCredentialService
         }
     }
 
-    private ValueTask CreateAsync(Credential[] creates, CancellationToken ct)
+    private ConfiguredValueTaskAwaitable CreateAsync(Credential[] creates, CancellationToken ct)
     {
         if (creates.Length == 0)
         {
-            return ValueTask.CompletedTask;
+            return TaskHelper.ConfiguredCompletedTask;
         }
 
         var entities = new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
