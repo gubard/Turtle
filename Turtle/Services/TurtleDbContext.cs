@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Nestor.Db.Services;
+using Turtle.Contract.Models;
 using Turtle.Contract.Services;
 
 namespace Turtle.Services;
@@ -12,6 +13,8 @@ public sealed class TurtleDbContext : NestorDbContext, IStaticFactory<DbContextO
 
     public TurtleDbContext(DbContextOptions options)
         : base(options) { }
+
+    public DbSet<CredentialEntity> Credentials { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
