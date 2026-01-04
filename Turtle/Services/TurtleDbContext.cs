@@ -7,7 +7,9 @@ using Turtle.Contract.Services;
 
 namespace Turtle.Services;
 
-public sealed class TurtleDbContext : NestorDbContext, IStaticFactory<DbContextOptions, DbContext>
+public sealed class TurtleDbContext
+    : NestorDbContext,
+        IStaticFactory<DbContextOptions, NestorDbContext>
 {
     public TurtleDbContext() { }
 
@@ -28,7 +30,7 @@ public sealed class TurtleDbContext : NestorDbContext, IStaticFactory<DbContextO
         modelBuilder.ApplyConfiguration(new CredentialEntityTypeConfiguration());
     }
 
-    public static DbContext Create(DbContextOptions input)
+    public static NestorDbContext Create(DbContextOptions input)
     {
         return new TurtleDbContext(input);
     }

@@ -25,7 +25,7 @@ public sealed class EfCredentialService
 {
     private readonly GaiaValues _gaiaValues;
 
-    public EfCredentialService(DbContext dbContext, GaiaValues gaiaValues)
+    public EfCredentialService(NestorDbContext dbContext, GaiaValues gaiaValues)
         : base(dbContext)
     {
         _gaiaValues = gaiaValues;
@@ -43,8 +43,7 @@ public sealed class EfCredentialService
         if (request.LastId != -1)
         {
             response.Events = await DbContext
-                .Set<EventEntity>()
-                .Where(x => x.Id > request.LastId)
+                .Events.Where(x => x.Id > request.LastId)
                 .ToArrayAsync(ct);
         }
 
@@ -69,9 +68,9 @@ public sealed class EfCredentialService
         );
         await DeleteAsync(request.DeleteIds, ct);
         await DbContext.SaveChangesAsync(ct);
+
         response.Events = await DbContext
-            .Set<EventEntity>()
-            .Where(x => x.Id > request.LastLocalId)
+            .Events.Where(x => x.Id > request.LastLocalId)
             .ToArrayAsync(ct);
 
         return response;
@@ -84,17 +83,16 @@ public sealed class EfCredentialService
         Create(request.CreateCredentials);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
+
         CredentialEntity.EditEntities(
             DbContext,
             _gaiaValues.UserId.ToString(),
             editEntities.ToArray()
         );
+
         Delete(request.DeleteIds);
         DbContext.SaveChanges();
-        response.Events = DbContext
-            .Set<EventEntity>()
-            .Where(x => x.Id > request.LastLocalId)
-            .ToArray();
+        response.Events = DbContext.Events.Where(x => x.Id > request.LastLocalId).ToArray();
 
         return response;
     }
@@ -102,15 +100,11 @@ public sealed class EfCredentialService
     public override TurtleGetResponse Get(TurtleGetRequest request)
     {
         var credentials = CredentialEntity.GetEntities(CreateQuery(request));
-
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
         {
-            response.Events = DbContext
-                .Set<EventEntity>()
-                .Where(x => x.Id > request.LastId)
-                .ToArray();
+            response.Events = DbContext.Events.Where(x => x.Id > request.LastId).ToArray();
         }
 
         return response;
@@ -208,14 +202,13 @@ public sealed class EfCredentialService
     private IQueryable<EventEntity> CreateQuery(TurtleGetRequest request)
     {
         var childrenIds = request.GetChildrenIds.Select(x => (Guid?)x).ToFrozenSet();
-        var query = DbContext.Set<EventEntity>().Where(x => x.Id == -1).Select(x => x.EntityId);
+        var query = DbContext.Events.Where(x => x.Id == -1).Select(x => x.EntityId);
 
         if (request.IsGetRoots)
         {
             query = query.Concat(
                 DbContext
-                    .Set<EventEntity>()
-                    .GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
+                    .Events.GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
                     .Where(x => x.EntityGuidValue == null)
                     .Distinct()
                     .Select(x => x.EntityId)
@@ -226,8 +219,7 @@ public sealed class EfCredentialService
         {
             query = query.Concat(
                 DbContext
-                    .Set<EventEntity>()
-                    .GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
+                    .Events.GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
                     .Where(x => childrenIds.Contains(x.EntityGuidValue))
                     .Distinct()
                     .Select(x => x.EntityId)
@@ -240,7 +232,7 @@ public sealed class EfCredentialService
             query = query.Concat(DbContext.Database.SqlQueryRaw<Guid>(sql));
         }
 
-        return DbContext.Set<EventEntity>().Where(x => query.Contains(x.EntityId));
+        return DbContext.Events.Where(x => query.Contains(x.EntityId));
     }
 
     private ValueTask DeleteAsync(Guid[] ids, CancellationToken ct)
@@ -347,24 +339,29 @@ public sealed class EfCredentialService
         }
 
         var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct().ToFrozenSet();
+
         var insertItems = CredentialEntity.GetEntities(
-            DbContext.Set<EventEntity>().Where(x => insertIds.Contains(x.EntityId))
+            DbContext.Events.Where(x => insertIds.Contains(x.EntityId))
         );
+
         var insertItemsDictionary = insertItems.ToDictionary(x => x.Id).ToFrozenDictionary();
         var startIds = changeOrders.Select(x => x.StartId).Distinct().ToFrozenSet();
+
         var startItems = CredentialEntity.GetEntities(
-            DbContext.Set<EventEntity>().Where(x => startIds.Contains(x.EntityId))
+            DbContext.Events.Where(x => startIds.Contains(x.EntityId))
         );
+
         var startItemsDictionary = startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
         var parentItems = startItems.Select(x => x.ParentId).Distinct().ToFrozenSet();
+
         var query = DbContext
-            .Set<EventEntity>()
-            .GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
+            .Events.GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
             .Where(x => parentItems.Contains(x.EntityGuidValue))
             .Select(x => x.EntityId)
             .Distinct();
+
         var siblings = CredentialEntity.GetEntities(
-            DbContext.Set<EventEntity>().Where(x => query.Contains(x.EntityId))
+            DbContext.Events.Where(x => query.Contains(x.EntityId))
         );
 
         for (var index = 0; index < changeOrders.Length; index++)
