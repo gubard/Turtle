@@ -1,5 +1,6 @@
 using Turtle.Contract.Models;
 using Turtle.Contract.Services;
+using Turtle.Services;
 using Zeus.Helpers;
 
 await WebApplication
@@ -10,5 +11,6 @@ await WebApplication
         TurtleGetRequest,
         TurtlePostRequest,
         TurtleGetResponse,
-        TurtlePostResponse
+        TurtlePostResponse,
+        TurtleDbContext
     >("Turtle");
