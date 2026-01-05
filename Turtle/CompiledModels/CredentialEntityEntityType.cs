@@ -8,7 +8,7 @@ using Turtle.Contract.Models;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Turtle
+namespace Turtle.CompiledModels
 {
     [EntityFrameworkInternal]
     public partial class CredentialEntityEntityType
@@ -133,7 +133,7 @@ namespace Turtle
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);
-            runtimeEntityType.AddAnnotation("Relational:TableName", "CredentialEntity");
+            runtimeEntityType.AddAnnotation("Relational:TableName", "Credentials");
             runtimeEntityType.AddAnnotation("Relational:ViewName", null);
             runtimeEntityType.AddAnnotation("Relational:ViewSchema", null);
 

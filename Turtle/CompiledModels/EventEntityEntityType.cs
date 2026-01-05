@@ -8,7 +8,7 @@ using Nestor.Db.Models;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Turtle
+namespace Turtle.CompiledModels
 {
     [EntityFrameworkInternal]
     public partial class EventEntityEntityType
@@ -232,7 +232,7 @@ namespace Turtle
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);
-            runtimeEntityType.AddAnnotation("Relational:TableName", "EventEntity");
+            runtimeEntityType.AddAnnotation("Relational:TableName", "Events");
             runtimeEntityType.AddAnnotation("Relational:ViewName", null);
             runtimeEntityType.AddAnnotation("Relational:ViewSchema", null);
 

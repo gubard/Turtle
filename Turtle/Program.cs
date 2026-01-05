@@ -6,7 +6,7 @@ using Turtle.Contract.Services;
 using Turtle.Services;
 using Zeus.Helpers;
 
-var migration = new Dictionary<long, string>();
+var migration = new Dictionary<int, string>();
 
 foreach (var (key, value) in SqliteMigration.Migrations)
 {

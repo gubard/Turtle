@@ -4,16 +4,16 @@ namespace Turtle.Contract.Helpers;
 
 public static class TurtleMigration
 {
-    public static readonly FrozenDictionary<long, string> Migrations;
+    public static readonly FrozenDictionary<int, string> Migrations;
 
     static TurtleMigration()
     {
-        Migrations = new Dictionary<long, string>
+        Migrations = new Dictionary<int, string>
         {
             {
-                202601041217,
+                6,
                 @"
-CREATE TABLE IF NOT EXISTS CredentialEntity (
+CREATE TABLE IF NOT EXISTS Credentials (
     Id TEXT PRIMARY KEY NOT NULL,
     Name TEXT NOT NULL CHECK(length(Name) <= 255),
     Login TEXT NOT NULL CHECK(length(Login) <= 255),

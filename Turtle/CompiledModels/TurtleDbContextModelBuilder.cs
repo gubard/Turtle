@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore.Metadata;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Turtle
+namespace Turtle.CompiledModels
 {
     public partial class TurtleDbContextModel
     {
         private TurtleDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("e2fac5ef-844f-4dec-b5d4-ca76545ca3bd"), entityTypeCount: 3)
+            : base(skipDetectChanges: false, modelId: new Guid("1e580e0c-89ad-405c-8624-49392368786a"), entityTypeCount: 3)
         {
         }
 

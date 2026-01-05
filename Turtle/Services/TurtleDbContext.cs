@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Nestor.Db.Services;
+using Turtle.CompiledModels;
 using Turtle.Contract.Models;
 using Turtle.Contract.Services;
 

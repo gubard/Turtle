@@ -6,7 +6,7 @@ using Turtle.Services;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Turtle
+namespace Turtle.CompiledModels
 {
     [DbContext(typeof(TurtleDbContext))]
     public partial class TurtleDbContextModel : RuntimeModel
