@@ -4,8 +4,6 @@ using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
 using Microsoft.EntityFrameworkCore;
-using Nestor.Db.Helpers;
-using Nestor.Db.Models;
 using Nestor.Db.Services;
 using Turtle.Contract.Models;
 
