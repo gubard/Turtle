@@ -20,13 +20,20 @@ public interface IEfCredentialService
     : ICredentialService,
         IEfService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
-public sealed class EfCredentialService
-    : EfService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
+public sealed class EfCredentialService<TDbContext>
+    : EfService<
+        TurtleGetRequest,
+        TurtlePostRequest,
+        TurtleGetResponse,
+        TurtlePostResponse,
+        TDbContext
+    >,
         IEfCredentialService
+    where TDbContext : NestorDbContext, ICredentialDbContext
 {
     private readonly GaiaValues _gaiaValues;
 
-    public EfCredentialService(NestorDbContext dbContext, GaiaValues gaiaValues)
+    public EfCredentialService(TDbContext dbContext, GaiaValues gaiaValues)
         : base(dbContext)
     {
         _gaiaValues = gaiaValues;
@@ -45,8 +52,7 @@ public sealed class EfCredentialService
         CancellationToken ct
     )
     {
-        var credentials = await CredentialEntity.GetEntitiesAsync(CreateQuery(request), ct);
-
+        var credentials = await CreateQuery(request).ToArrayAsync(ct);
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
@@ -60,30 +66,35 @@ public sealed class EfCredentialService
     }
 
     public override ConfiguredValueTaskAwaitable<TurtlePostResponse> PostAsync(
+        Guid idempotentId,
         TurtlePostRequest request,
         CancellationToken ct
     )
     {
-        return PostCore(request, ct).ConfigureAwait(false);
+        return PostCore(idempotentId, request, ct).ConfigureAwait(false);
     }
 
     private async ValueTask<TurtlePostResponse> PostCore(
+        Guid idempotentId,
         TurtlePostRequest request,
         CancellationToken ct
     )
     {
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
-        await CreateAsync(request.CreateCredentials, ct);
+        await CreateAsync(idempotentId, request.CreateCredentials, ct);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
+
         await CredentialEntity.EditEntitiesAsync(
             DbContext,
             _gaiaValues.UserId.ToString(),
+            idempotentId,
             editEntities.ToArray(),
             ct
         );
-        await DeleteAsync(request.DeleteIds, ct);
+
+        await DeleteAsync(idempotentId, request.DeleteIds, ct);
         await DbContext.SaveChangesAsync(ct);
 
         response.Events = await DbContext
@@ -93,21 +104,22 @@ public sealed class EfCredentialService
         return response;
     }
 
-    public override TurtlePostResponse Post(TurtlePostRequest request)
+    public override TurtlePostResponse Post(Guid idempotentId, TurtlePostRequest request)
     {
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
-        Create(request.CreateCredentials);
+        Create(idempotentId, request.CreateCredentials);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
 
         CredentialEntity.EditEntities(
             DbContext,
             _gaiaValues.UserId.ToString(),
+            idempotentId,
             editEntities.ToArray()
         );
 
-        Delete(request.DeleteIds);
+        Delete(idempotentId, request.DeleteIds);
         DbContext.SaveChanges();
         response.Events = DbContext.Events.Where(x => x.Id > request.LastLocalId).ToArray();
 
@@ -116,7 +128,7 @@ public sealed class EfCredentialService
 
     public override TurtleGetResponse Get(TurtleGetRequest request)
     {
-        var credentials = CredentialEntity.GetEntities(CreateQuery(request));
+        var credentials = CreateQuery(request).ToArray();
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
@@ -216,43 +228,37 @@ public sealed class EfCredentialService
         return response;
     }
 
-    private IQueryable<EventEntity> CreateQuery(TurtleGetRequest request)
+    private IQueryable<CredentialEntity> CreateQuery(TurtleGetRequest request)
     {
         var childrenIds = request.GetChildrenIds.Select(x => (Guid?)x).ToFrozenSet();
-        var query = DbContext.Events.Where(x => x.Id == -1).Select(x => x.EntityId);
+        var query = DbContext.Credentials.Where(x => x.Id == Guid.Empty);
 
         if (request.IsGetRoots)
         {
-            query = query.Concat(
-                DbContext
-                    .Events.GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
-                    .Where(x => x.EntityGuidValue == null)
-                    .Distinct()
-                    .Select(x => x.EntityId)
-            );
+            query = query.Concat(DbContext.Credentials.Where(x => x.ParentId == null));
         }
 
         if (request.GetChildrenIds.Length != 0)
         {
             query = query.Concat(
-                DbContext
-                    .Events.GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
-                    .Where(x => childrenIds.Contains(x.EntityGuidValue))
-                    .Distinct()
-                    .Select(x => x.EntityId)
+                DbContext.Credentials.Where(x => childrenIds.Contains(x.ParentId))
             );
         }
 
         if (request.GetParentsIds.Length != 0)
         {
             var sql = CreateSqlForAllChildren(request.GetParentsIds);
-            query = query.Concat(DbContext.Database.SqlQueryRaw<Guid>(sql));
+            query = query.Concat(DbContext.Credentials.FromSqlRaw(sql));
         }
 
-        return DbContext.Events.Where(x => query.Contains(x.EntityId));
+        return query;
     }
 
-    private ConfiguredValueTaskAwaitable DeleteAsync(Guid[] ids, CancellationToken ct)
+    private ConfiguredValueTaskAwaitable DeleteAsync(
+        Guid idempotentId,
+        Guid[] ids,
+        CancellationToken ct
+    )
     {
         if (ids.Length == 0)
         {
@@ -262,6 +268,7 @@ public sealed class EfCredentialService
         return CredentialEntity.DeleteEntitiesAsync(
             DbContext,
             _gaiaValues.UserId.ToString(),
+            idempotentId,
             ids,
             ct
         );
@@ -306,7 +313,11 @@ public sealed class EfCredentialService
         }
     }
 
-    private ConfiguredValueTaskAwaitable CreateAsync(Credential[] creates, CancellationToken ct)
+    private ConfiguredValueTaskAwaitable CreateAsync(
+        Guid idempotentId,
+        Credential[] creates,
+        CancellationToken ct
+    )
     {
         if (creates.Length == 0)
         {
@@ -339,6 +350,7 @@ public sealed class EfCredentialService
         return CredentialEntity.AddEntitiesAsync(
             DbContext,
             $"{_gaiaValues.UserId}",
+            idempotentId,
             entities.ToArray(),
             ct
         );
@@ -356,30 +368,13 @@ public sealed class EfCredentialService
         }
 
         var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct().ToFrozenSet();
-
-        var insertItems = CredentialEntity.GetEntities(
-            DbContext.Events.Where(x => insertIds.Contains(x.EntityId))
-        );
-
+        var insertItems = DbContext.Credentials.Where(x => insertIds.Contains(x.Id));
         var insertItemsDictionary = insertItems.ToDictionary(x => x.Id).ToFrozenDictionary();
         var startIds = changeOrders.Select(x => x.StartId).Distinct().ToFrozenSet();
-
-        var startItems = CredentialEntity.GetEntities(
-            DbContext.Events.Where(x => startIds.Contains(x.EntityId))
-        );
-
+        var startItems = DbContext.Credentials.Where(x => startIds.Contains(x.Id));
         var startItemsDictionary = startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
         var parentItems = startItems.Select(x => x.ParentId).Distinct().ToFrozenSet();
-
-        var query = DbContext
-            .Events.GetProperty(nameof(CredentialEntity), nameof(CredentialEntity.ParentId))
-            .Where(x => parentItems.Contains(x.EntityGuidValue))
-            .Select(x => x.EntityId)
-            .Distinct();
-
-        var siblings = CredentialEntity.GetEntities(
-            DbContext.Events.Where(x => query.Contains(x.EntityId))
-        );
+        var siblings = DbContext.Credentials.Where(x => parentItems.Contains(x.Id)).ToArray();
 
         for (var index = 0; index < changeOrders.Length; index++)
         {
@@ -420,17 +415,22 @@ public sealed class EfCredentialService
         }
     }
 
-    private void Delete(Guid[] ids)
+    private void Delete(Guid idempotentId, Guid[] ids)
     {
         if (ids.Length == 0)
         {
             return;
         }
 
-        CredentialEntity.DeleteEntities(DbContext, _gaiaValues.UserId.ToString(), ids);
+        CredentialEntity.DeleteEntities(
+            DbContext,
+            _gaiaValues.UserId.ToString(),
+            idempotentId,
+            ids
+        );
     }
 
-    private void Create(Credential[] creates)
+    private void Create(Guid idempotentId, Credential[] creates)
     {
         if (creates.Length == 0)
         {
@@ -460,63 +460,74 @@ public sealed class EfCredentialService
             };
         }
 
-        CredentialEntity.AddEntities(DbContext, _gaiaValues.UserId.ToString(), entities.ToArray());
+        CredentialEntity.AddEntities(
+            DbContext,
+            _gaiaValues.UserId.ToString(),
+            idempotentId,
+            entities.ToArray()
+        );
     }
 
-    private string CreateSqlForAllChildren(params Guid[] ids)
+    private string CreateSqlForAllChildren(Guid[] ids)
     {
         var idsString = ids.Select(i => i.ToString().ToUpperInvariant()).JoinString("', '");
 
-        return $"""
-            WITH RECURSIVE hierarchy(Id, EntityId, EntityGuidValue) AS (
-                SELECT
-                    Id,
-                    EntityId,
-                    EntityGuidValue
-                FROM
-                    EventEntity
-                WHERE
-                    EntityId IN ('{idsString}')
-                  AND EntityProperty = 'ParentId'
-                  AND EntityType = 'CredentialEntity'
-                  AND Id IN (
-                    SELECT
-                        MAX(
-                                CASE WHEN s.EntityProperty = 'ParentId'
-                                    AND s.EntityType = 'CredentialEntity' THEN s.Id END
-                        )
-                    FROM
-                        EventEntity AS s
-                    GROUP BY
-                        s.EntityId
-                )
-                UNION ALL
-                SELECT
-                    t.Id,
-                    t.EntityId,
-                    t.EntityGuidValue
-                FROM
-                    EventEntity AS t
-                INNER JOIN hierarchy h ON h.EntityGuidValue = t.EntityId
-                WHERE
-                    t.EntityProperty = 'ParentId'
-                  AND t.EntityType = 'CredentialEntity'
-                  AND t.Id IN (
-                    SELECT
-                        MAX(
-                                CASE WHEN e.EntityProperty = 'ParentId'
-                                    AND e.EntityType = 'CredentialEntity' THEN e.Id END
-                        )
-                    FROM
-                        EventEntity AS e
-                    GROUP BY
-                        e.EntityId
-                )
-            )
-            SELECT
-                DISTINCT EntityId
-            FROM
-                hierarchy
+        return $$"""
+            WITH RECURSIVE hierarchy(
+                     Id,
+                     Name,
+                     Login,
+                     Key,
+                     IsAvailableUpperLatin,
+                     IsAvailableLowerLatin,
+                     IsAvailableNumber,
+                     IsAvailableSpecialSymbols,
+                     CustomAvailableCharacters,
+                     Length,
+                     Regex,
+                     Type,
+                     OrderIndex,
+                     ParentId
+                 ) AS (
+                     SELECT
+                     Id,
+                     Name,
+                     Login,
+                     Key,
+                     IsAvailableUpperLatin,
+                     IsAvailableLowerLatin,
+                     IsAvailableNumber,
+                     IsAvailableSpecialSymbols,
+                     CustomAvailableCharacters,
+                     Length,
+                     Regex,
+                     Type,
+                     OrderIndex,
+                     ParentId
+                     FROM ToDoItem
+                     WHERE Id IN ('{{idsString}}')
+
+                     UNION ALL
+
+                     SELECT
+                     t.Id,
+                     t.Name,
+                     t.Login,
+                     t.Key,
+                     t.IsAvailableUpperLatin,
+                     t.IsAvailableLowerLatin,
+                     t.IsAvailableNumber,
+                     t.IsAvailableSpecialSymbols,
+                     t.CustomAvailableCharacters,
+                     t.Length,
+                     t.Regex,
+                     t.Type,
+                     t.OrderIndex,
+                     t.ParentId
+                     FROM ToDoItem t
+                     INNER JOIN hierarchy h ON t.ParentId = h.Id
+                 )
+                 SELECT * FROM hierarchy;
             """;
     }
 }

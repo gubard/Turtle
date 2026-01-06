@@ -10,7 +10,8 @@ namespace Turtle.Services;
 
 public sealed class TurtleDbContext
     : NestorDbContext,
-        IStaticFactory<DbContextOptions, NestorDbContext>
+        IStaticFactory<DbContextOptions, NestorDbContext>,
+        ICredentialDbContext
 {
     public TurtleDbContext() { }
 

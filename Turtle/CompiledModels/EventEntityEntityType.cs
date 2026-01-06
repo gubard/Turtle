@@ -1149,53 +1149,39 @@ namespace Turtle.CompiledModels
             entityUInt64Value.SetComparer(new NullableValueComparer<ulong>(entityUInt64Value.TypeMapping.Comparer));
             entityUInt64Value.SetKeyComparer(new NullableValueComparer<ulong>(entityUInt64Value.TypeMapping.KeyComparer));
 
-            var isLast = runtimeEntityType.AddProperty(
-                "IsLast",
-                typeof(bool),
-                propertyInfo: typeof(EventEntity).GetProperty("IsLast", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                fieldInfo: typeof(EventEntity).GetField("<IsLast>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                sentinel: false);
-            isLast.SetGetter(
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.IsLast(instance),
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.IsLast(instance) == false);
-            isLast.SetSetter(
-                EventEntity (EventEntity instance, bool value) =>
+            var transactionId = runtimeEntityType.AddProperty(
+                "TransactionId",
+                typeof(Guid),
+                propertyInfo: typeof(EventEntity).GetProperty("TransactionId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(EventEntity).GetField("<TransactionId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
+            transactionId.SetGetter(
+                Guid (EventEntity instance) => EventEntityUnsafeAccessors.TransactionId(instance),
+                bool (EventEntity instance) => EventEntityUnsafeAccessors.TransactionId(instance) == new Guid("00000000-0000-0000-0000-000000000000"));
+            transactionId.SetSetter(
+                EventEntity (EventEntity instance, Guid value) =>
                 {
-                    EventEntityUnsafeAccessors.IsLast(instance) = value;
+                    EventEntityUnsafeAccessors.TransactionId(instance) = value;
                     return instance;
                 });
-            isLast.SetMaterializationSetter(
-                EventEntity (EventEntity instance, bool value) =>
+            transactionId.SetMaterializationSetter(
+                EventEntity (EventEntity instance, Guid value) =>
                 {
-                    EventEntityUnsafeAccessors.IsLast(instance) = value;
+                    EventEntityUnsafeAccessors.TransactionId(instance) = value;
                     return instance;
                 });
-            isLast.SetAccessors(
-                bool (IInternalEntry entry) => EventEntityUnsafeAccessors.IsLast(((EventEntity)(entry.Entity))),
-                bool (IInternalEntry entry) => EventEntityUnsafeAccessors.IsLast(((EventEntity)(entry.Entity))),
-                bool (IInternalEntry entry) => entry.ReadOriginalValue<bool>(isLast, 26),
-                bool (IInternalEntry entry) => entry.GetCurrentValue<bool>(isLast));
-            isLast.SetPropertyIndexes(
+            transactionId.SetAccessors(
+                Guid (IInternalEntry entry) => EventEntityUnsafeAccessors.TransactionId(((EventEntity)(entry.Entity))),
+                Guid (IInternalEntry entry) => EventEntityUnsafeAccessors.TransactionId(((EventEntity)(entry.Entity))),
+                Guid (IInternalEntry entry) => entry.ReadOriginalValue<Guid>(transactionId, 26),
+                Guid (IInternalEntry entry) => entry.GetCurrentValue<Guid>(transactionId));
+            transactionId.SetPropertyIndexes(
                 index: 26,
                 originalValueIndex: 26,
                 shadowIndex: -1,
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
-            isLast.TypeMapping = BoolTypeMapping.Default.Clone(
-                comparer: new ValueComparer<bool>(
-                    bool (bool v1, bool v2) => v1 == v2,
-                    int (bool v) => ((object)v).GetHashCode(),
-                    bool (bool v) => v),
-                keyComparer: new ValueComparer<bool>(
-                    bool (bool v1, bool v2) => v1 == v2,
-                    int (bool v) => ((object)v).GetHashCode(),
-                    bool (bool v) => v),
-                providerValueComparer: new ValueComparer<bool>(
-                    bool (bool v1, bool v2) => v1 == v2,
-                    int (bool v) => ((object)v).GetHashCode(),
-                    bool (bool v) => v),
-                mappingInfo: new RelationalTypeMappingInfo(
-                    storeTypeName: "INTEGER"));
+            transactionId.TypeMapping = SqliteGuidTypeMapping.Default;
 
             var userId = runtimeEntityType.AddProperty(
                 "UserId",
@@ -1266,7 +1252,7 @@ namespace Turtle.CompiledModels
             var entityUInt16Value = runtimeEntityType.FindProperty("EntityUInt16Value");
             var entityUInt32Value = runtimeEntityType.FindProperty("EntityUInt32Value");
             var entityUInt64Value = runtimeEntityType.FindProperty("EntityUInt64Value");
-            var isLast = runtimeEntityType.FindProperty("IsLast");
+            var transactionId = runtimeEntityType.FindProperty("TransactionId");
             var userId = runtimeEntityType.FindProperty("UserId");
             var key = runtimeEntityType.FindKey(new[] { id });
             key.SetPrincipalKeyValueFactory(KeyValueFactoryFactory.CreateSimpleNonNullableFactory<long>(key));
@@ -1275,7 +1261,7 @@ namespace Turtle.CompiledModels
                 ISnapshot (IInternalEntry source) =>
                 {
                     var structuralType = ((EventEntity)(source.Entity));
-                    return ((ISnapshot)(new Snapshot<long, DateTimeOffset, bool?, byte[], byte?, char?, DateOnly?, DateTimeOffset?, DateTime?, decimal?, double?, Guid?, Guid, short?, int?, long?, string, sbyte?, float?, string, TimeOnly?, TimeSpan?, string, ushort?, uint?, ulong?, bool, string>(((ValueComparer<long>)(((IProperty)id).GetValueComparer())).Snapshot(source.GetCurrentValue<long>(id)), ((ValueComparer<DateTimeOffset>)(((IProperty)createdAt).GetValueComparer())).Snapshot(source.GetCurrentValue<DateTimeOffset>(createdAt)), (source.GetCurrentValue<bool?>(entityBooleanValue) == null ? null : ((ValueComparer<bool?>)(((IProperty)entityBooleanValue).GetValueComparer())).Snapshot(source.GetCurrentValue<bool?>(entityBooleanValue))), (source.GetCurrentValue<byte[]>(entityByteArrayValue) == null ? null : ((ValueComparer<byte[]>)(((IProperty)entityByteArrayValue).GetValueComparer())).Snapshot(source.GetCurrentValue<byte[]>(entityByteArrayValue))), (source.GetCurrentValue<byte?>(entityByteValue) == null ? null : ((ValueComparer<byte?>)(((IProperty)entityByteValue).GetValueComparer())).Snapshot(source.GetCurrentValue<byte?>(entityByteValue))), (source.GetCurrentValue<char?>(entityCharValue) == null ? null : ((ValueComparer<char?>)(((IProperty)entityCharValue).GetValueComparer())).Snapshot(source.GetCurrentValue<char?>(entityCharValue))), (source.GetCurrentValue<DateOnly?>(entityDateOnlyValue) == null ? null : ((ValueComparer<DateOnly?>)(((IProperty)entityDateOnlyValue).GetValueComparer())).Snapshot(source.GetCurrentValue<DateOnly?>(entityDateOnlyValue))), (source.GetCurrentValue<DateTimeOffset?>(entityDateTimeOffsetValue) == null ? null : ((ValueComparer<DateTimeOffset?>)(((IProperty)entityDateTimeOffsetValue).GetValueComparer())).Snapshot(source.GetCurrentValue<DateTimeOffset?>(entityDateTimeOffsetValue))), (source.GetCurrentValue<DateTime?>(entityDateTimeValue) == null ? null : ((ValueComparer<DateTime?>)(((IProperty)entityDateTimeValue).GetValueComparer())).Snapshot(source.GetCurrentValue<DateTime?>(entityDateTimeValue))), (source.GetCurrentValue<decimal?>(entityDecimalValue) == null ? null : ((ValueComparer<decimal?>)(((IProperty)entityDecimalValue).GetValueComparer())).Snapshot(source.GetCurrentValue<decimal?>(entityDecimalValue))), (source.GetCurrentValue<double?>(entityDoubleValue) == null ? null : ((ValueComparer<double?>)(((IProperty)entityDoubleValue).GetValueComparer())).Snapshot(source.GetCurrentValue<double?>(entityDoubleValue))), (source.GetCurrentValue<Guid?>(entityGuidValue) == null ? null : ((ValueComparer<Guid?>)(((IProperty)entityGuidValue).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid?>(entityGuidValue))), ((ValueComparer<Guid>)(((IProperty)entityId).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid>(entityId)), (source.GetCurrentValue<short?>(entityInt16Value) == null ? null : ((ValueComparer<short?>)(((IProperty)entityInt16Value).GetValueComparer())).Snapshot(source.GetCurrentValue<short?>(entityInt16Value))), (source.GetCurrentValue<int?>(entityInt32Value) == null ? null : ((ValueComparer<int?>)(((IProperty)entityInt32Value).GetValueComparer())).Snapshot(source.GetCurrentValue<int?>(entityInt32Value))), (source.GetCurrentValue<long?>(entityInt64Value) == null ? null : ((ValueComparer<long?>)(((IProperty)entityInt64Value).GetValueComparer())).Snapshot(source.GetCurrentValue<long?>(entityInt64Value))), (source.GetCurrentValue<string>(entityProperty) == null ? null : ((ValueComparer<string>)(((IProperty)entityProperty).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(entityProperty))), (source.GetCurrentValue<sbyte?>(entitySByteValue) == null ? null : ((ValueComparer<sbyte?>)(((IProperty)entitySByteValue).GetValueComparer())).Snapshot(source.GetCurrentValue<sbyte?>(entitySByteValue))), (source.GetCurrentValue<float?>(entitySingleValue) == null ? null : ((ValueComparer<float?>)(((IProperty)entitySingleValue).GetValueComparer())).Snapshot(source.GetCurrentValue<float?>(entitySingleValue))), (source.GetCurrentValue<string>(entityStringValue) == null ? null : ((ValueComparer<string>)(((IProperty)entityStringValue).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(entityStringValue))), (source.GetCurrentValue<TimeOnly?>(entityTimeOnlyValue) == null ? null : ((ValueComparer<TimeOnly?>)(((IProperty)entityTimeOnlyValue).GetValueComparer())).Snapshot(source.GetCurrentValue<TimeOnly?>(entityTimeOnlyValue))), (source.GetCurrentValue<TimeSpan?>(entityTimeSpanValue) == null ? null : ((ValueComparer<TimeSpan?>)(((IProperty)entityTimeSpanValue).GetValueComparer())).Snapshot(source.GetCurrentValue<TimeSpan?>(entityTimeSpanValue))), (source.GetCurrentValue<string>(entityType) == null ? null : ((ValueComparer<string>)(((IProperty)entityType).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(entityType))), (source.GetCurrentValue<ushort?>(entityUInt16Value) == null ? null : ((ValueComparer<ushort?>)(((IProperty)entityUInt16Value).GetValueComparer())).Snapshot(source.GetCurrentValue<ushort?>(entityUInt16Value))), (source.GetCurrentValue<uint?>(entityUInt32Value) == null ? null : ((ValueComparer<uint?>)(((IProperty)entityUInt32Value).GetValueComparer())).Snapshot(source.GetCurrentValue<uint?>(entityUInt32Value))), (source.GetCurrentValue<ulong?>(entityUInt64Value) == null ? null : ((ValueComparer<ulong?>)(((IProperty)entityUInt64Value).GetValueComparer())).Snapshot(source.GetCurrentValue<ulong?>(entityUInt64Value))), ((ValueComparer<bool>)(((IProperty)isLast).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isLast)), (source.GetCurrentValue<string>(userId) == null ? null : ((ValueComparer<string>)(((IProperty)userId).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(userId))))));
+                    return ((ISnapshot)(new Snapshot<long, DateTimeOffset, bool?, byte[], byte?, char?, DateOnly?, DateTimeOffset?, DateTime?, decimal?, double?, Guid?, Guid, short?, int?, long?, string, sbyte?, float?, string, TimeOnly?, TimeSpan?, string, ushort?, uint?, ulong?, Guid, string>(((ValueComparer<long>)(((IProperty)id).GetValueComparer())).Snapshot(source.GetCurrentValue<long>(id)), ((ValueComparer<DateTimeOffset>)(((IProperty)createdAt).GetValueComparer())).Snapshot(source.GetCurrentValue<DateTimeOffset>(createdAt)), (source.GetCurrentValue<bool?>(entityBooleanValue) == null ? null : ((ValueComparer<bool?>)(((IProperty)entityBooleanValue).GetValueComparer())).Snapshot(source.GetCurrentValue<bool?>(entityBooleanValue))), (source.GetCurrentValue<byte[]>(entityByteArrayValue) == null ? null : ((ValueComparer<byte[]>)(((IProperty)entityByteArrayValue).GetValueComparer())).Snapshot(source.GetCurrentValue<byte[]>(entityByteArrayValue))), (source.GetCurrentValue<byte?>(entityByteValue) == null ? null : ((ValueComparer<byte?>)(((IProperty)entityByteValue).GetValueComparer())).Snapshot(source.GetCurrentValue<byte?>(entityByteValue))), (source.GetCurrentValue<char?>(entityCharValue) == null ? null : ((ValueComparer<char?>)(((IProperty)entityCharValue).GetValueComparer())).Snapshot(source.GetCurrentValue<char?>(entityCharValue))), (source.GetCurrentValue<DateOnly?>(entityDateOnlyValue) == null ? null : ((ValueComparer<DateOnly?>)(((IProperty)entityDateOnlyValue).GetValueComparer())).Snapshot(source.GetCurrentValue<DateOnly?>(entityDateOnlyValue))), (source.GetCurrentValue<DateTimeOffset?>(entityDateTimeOffsetValue) == null ? null : ((ValueComparer<DateTimeOffset?>)(((IProperty)entityDateTimeOffsetValue).GetValueComparer())).Snapshot(source.GetCurrentValue<DateTimeOffset?>(entityDateTimeOffsetValue))), (source.GetCurrentValue<DateTime?>(entityDateTimeValue) == null ? null : ((ValueComparer<DateTime?>)(((IProperty)entityDateTimeValue).GetValueComparer())).Snapshot(source.GetCurrentValue<DateTime?>(entityDateTimeValue))), (source.GetCurrentValue<decimal?>(entityDecimalValue) == null ? null : ((ValueComparer<decimal?>)(((IProperty)entityDecimalValue).GetValueComparer())).Snapshot(source.GetCurrentValue<decimal?>(entityDecimalValue))), (source.GetCurrentValue<double?>(entityDoubleValue) == null ? null : ((ValueComparer<double?>)(((IProperty)entityDoubleValue).GetValueComparer())).Snapshot(source.GetCurrentValue<double?>(entityDoubleValue))), (source.GetCurrentValue<Guid?>(entityGuidValue) == null ? null : ((ValueComparer<Guid?>)(((IProperty)entityGuidValue).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid?>(entityGuidValue))), ((ValueComparer<Guid>)(((IProperty)entityId).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid>(entityId)), (source.GetCurrentValue<short?>(entityInt16Value) == null ? null : ((ValueComparer<short?>)(((IProperty)entityInt16Value).GetValueComparer())).Snapshot(source.GetCurrentValue<short?>(entityInt16Value))), (source.GetCurrentValue<int?>(entityInt32Value) == null ? null : ((ValueComparer<int?>)(((IProperty)entityInt32Value).GetValueComparer())).Snapshot(source.GetCurrentValue<int?>(entityInt32Value))), (source.GetCurrentValue<long?>(entityInt64Value) == null ? null : ((ValueComparer<long?>)(((IProperty)entityInt64Value).GetValueComparer())).Snapshot(source.GetCurrentValue<long?>(entityInt64Value))), (source.GetCurrentValue<string>(entityProperty) == null ? null : ((ValueComparer<string>)(((IProperty)entityProperty).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(entityProperty))), (source.GetCurrentValue<sbyte?>(entitySByteValue) == null ? null : ((ValueComparer<sbyte?>)(((IProperty)entitySByteValue).GetValueComparer())).Snapshot(source.GetCurrentValue<sbyte?>(entitySByteValue))), (source.GetCurrentValue<float?>(entitySingleValue) == null ? null : ((ValueComparer<float?>)(((IProperty)entitySingleValue).GetValueComparer())).Snapshot(source.GetCurrentValue<float?>(entitySingleValue))), (source.GetCurrentValue<string>(entityStringValue) == null ? null : ((ValueComparer<string>)(((IProperty)entityStringValue).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(entityStringValue))), (source.GetCurrentValue<TimeOnly?>(entityTimeOnlyValue) == null ? null : ((ValueComparer<TimeOnly?>)(((IProperty)entityTimeOnlyValue).GetValueComparer())).Snapshot(source.GetCurrentValue<TimeOnly?>(entityTimeOnlyValue))), (source.GetCurrentValue<TimeSpan?>(entityTimeSpanValue) == null ? null : ((ValueComparer<TimeSpan?>)(((IProperty)entityTimeSpanValue).GetValueComparer())).Snapshot(source.GetCurrentValue<TimeSpan?>(entityTimeSpanValue))), (source.GetCurrentValue<string>(entityType) == null ? null : ((ValueComparer<string>)(((IProperty)entityType).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(entityType))), (source.GetCurrentValue<ushort?>(entityUInt16Value) == null ? null : ((ValueComparer<ushort?>)(((IProperty)entityUInt16Value).GetValueComparer())).Snapshot(source.GetCurrentValue<ushort?>(entityUInt16Value))), (source.GetCurrentValue<uint?>(entityUInt32Value) == null ? null : ((ValueComparer<uint?>)(((IProperty)entityUInt32Value).GetValueComparer())).Snapshot(source.GetCurrentValue<uint?>(entityUInt32Value))), (source.GetCurrentValue<ulong?>(entityUInt64Value) == null ? null : ((ValueComparer<ulong?>)(((IProperty)entityUInt64Value).GetValueComparer())).Snapshot(source.GetCurrentValue<ulong?>(entityUInt64Value))), ((ValueComparer<Guid>)(((IProperty)transactionId).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid>(transactionId)), (source.GetCurrentValue<string>(userId) == null ? null : ((ValueComparer<string>)(((IProperty)userId).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(userId))))));
                 });
             runtimeEntityType.SetStoreGeneratedValuesFactory(
                 ISnapshot () => ((ISnapshot)(new Snapshot<long>(((ValueComparer<long>)(((IProperty)id).GetValueComparer())).Snapshot(default(long))))));

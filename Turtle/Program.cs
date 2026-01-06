@@ -22,7 +22,7 @@ await WebApplication
     .CreateBuilder(args)
     .CreateAndRunZeusApp<
         ICredentialService,
-        EfCredentialService,
+        EfCredentialService<TurtleDbContext>,
         TurtleGetRequest,
         TurtlePostRequest,
         TurtleGetResponse,

@@ -1,8 +1,9 @@
 using Nestor.Db.Models;
+using Turtle.Contract.Services;
 
 namespace Turtle.Contract.Models;
 
-[SourceEntity(nameof(Id))]
+[SourceEntity(nameof(Id), typeof(ICredentialDbContext))]
 public partial class CredentialEntity
 {
     public Guid Id { get; set; }

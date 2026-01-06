@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS Credentials (
     OrderIndex INTEGER NOT NULL,
     ParentId TEXT,
     -- Optional: Foreign key constraint for self-referencing ParentId
-    FOREIGN KEY (ParentId) REFERENCES CredentialEntities (Id)
+    FOREIGN KEY (ParentId) REFERENCES Credentials (Id)
 );
 "
             },

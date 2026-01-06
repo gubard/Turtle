@@ -88,8 +88,8 @@ namespace Turtle.CompiledModels
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<EntityUInt64Value>k__BackingField")]
         public static extern ref ulong? EntityUInt64Value(EventEntity @this);
 
-        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<IsLast>k__BackingField")]
-        public static extern ref bool IsLast(EventEntity @this);
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<TransactionId>k__BackingField")]
+        public static extern ref Guid TransactionId(EventEntity @this);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<UserId>k__BackingField")]
         public static extern ref string UserId(EventEntity @this);
