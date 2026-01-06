@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS Credentials (
     IsAvailableLowerLatin INTEGER NOT NULL CHECK (IsAvailableLowerLatin IN (0, 1)),
     IsAvailableNumber INTEGER NOT NULL CHECK (IsAvailableNumber IN (0, 1)),
     IsAvailableSpecialSymbols INTEGER NOT NULL CHECK (IsAvailableSpecialSymbols IN (0, 1)),
-    CustomAvailableCharacters TEXT NOT NULL,
+    CustomAvailableCharacters TEXT NOT NULL CHECK(length(Regex) <= 1000),
     Length INTEGER NOT NULL,
     Regex TEXT NOT NULL CHECK(length(Regex) <= 255),
     Type INTEGER NOT NULL,

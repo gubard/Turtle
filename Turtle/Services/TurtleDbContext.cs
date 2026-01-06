@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore.Design;
 using Nestor.Db.Services;
 using Turtle.CompiledModels;
 using Turtle.Contract.Models;
-using Turtle.Contract.Services;
 
 namespace Turtle.Services;
 
@@ -23,12 +22,6 @@ public sealed class TurtleDbContext
     {
         base.OnConfiguring(optionsBuilder);
         optionsBuilder.UseModel(TurtleDbContextModel.Instance);
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        modelBuilder.ApplyConfiguration(new CredentialEntityTypeConfiguration());
     }
 
     public static NestorDbContext Create(DbContextOptions input)

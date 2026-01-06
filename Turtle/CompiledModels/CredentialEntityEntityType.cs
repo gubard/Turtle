@@ -35,7 +35,8 @@ namespace Turtle.CompiledModels
                 "CustomAvailableCharacters",
                 typeof(string),
                 propertyInfo: typeof(CredentialEntity).GetProperty("CustomAvailableCharacters", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                fieldInfo: typeof(CredentialEntity).GetField("<CustomAvailableCharacters>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+                fieldInfo: typeof(CredentialEntity).GetField("<CustomAvailableCharacters>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                maxLength: 1000);
 
             var isAvailableLowerLatin = runtimeEntityType.AddProperty(
                 "IsAvailableLowerLatin",
