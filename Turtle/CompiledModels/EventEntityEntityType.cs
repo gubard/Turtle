@@ -348,8 +348,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityDateOnlyValue.TypeMapping = SqliteDateOnlyTypeMapping.Default;
-            entityDateOnlyValue.SetComparer(new NullableValueComparer<DateOnly>(entityDateOnlyValue.TypeMapping.Comparer));
-            entityDateOnlyValue.SetKeyComparer(new NullableValueComparer<DateOnly>(entityDateOnlyValue.TypeMapping.KeyComparer));
+            entityDateOnlyValue.SetComparer(new ValueComparer<DateOnly?>(
+                bool (DateOnly? c1, DateOnly? c2) => c1 == c2,
+                int (DateOnly? c) => ((object)c).GetHashCode(),
+                DateOnly? (DateOnly? c) => c));
 
             var entityDateTimeOffsetValue = runtimeEntityType.AddProperty(
                 "EntityDateTimeOffsetValue",
