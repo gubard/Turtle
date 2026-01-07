@@ -550,8 +550,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityGuidValue.TypeMapping = SqliteGuidTypeMapping.Default;
-            entityGuidValue.SetComparer(new NullableValueComparer<Guid>(entityGuidValue.TypeMapping.Comparer));
-            entityGuidValue.SetKeyComparer(new NullableValueComparer<Guid>(entityGuidValue.TypeMapping.KeyComparer));
+            entityGuidValue.SetComparer(new ValueComparer<Guid?>(
+                bool (Guid? c1, Guid? c2) => c1 == c2,
+                int (Guid? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                Guid? (Guid? c) => c));
 
             var entityId = runtimeEntityType.AddProperty(
                 "EntityId",
@@ -586,6 +588,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityId.TypeMapping = SqliteGuidTypeMapping.Default;
+            entityId.SetComparer(new ValueComparer<Guid>(
+                bool (Guid c1, Guid c2) => c1 == c2,
+                int (Guid c) => ((object)c).GetHashCode(),
+                Guid (Guid c) => c));
 
             var entityInt16Value = runtimeEntityType.AddProperty(
                 "EntityInt16Value",
@@ -1194,6 +1200,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             transactionId.TypeMapping = SqliteGuidTypeMapping.Default;
+            transactionId.SetComparer(new ValueComparer<Guid>(
+                bool (Guid c1, Guid c2) => c1 == c2,
+                int (Guid c) => ((object)c).GetHashCode(),
+                Guid (Guid c) => c));
 
             var userId = runtimeEntityType.AddProperty(
                 "UserId",
