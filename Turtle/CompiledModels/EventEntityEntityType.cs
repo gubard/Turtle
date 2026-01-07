@@ -944,8 +944,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityTimeOnlyValue.TypeMapping = SqliteTimeOnlyTypeMapping.Default;
-            entityTimeOnlyValue.SetComparer(new NullableValueComparer<TimeOnly>(entityTimeOnlyValue.TypeMapping.Comparer));
-            entityTimeOnlyValue.SetKeyComparer(new NullableValueComparer<TimeOnly>(entityTimeOnlyValue.TypeMapping.KeyComparer));
+            entityTimeOnlyValue.SetComparer(new ValueComparer<TimeOnly?>(
+                bool (TimeOnly? c1, TimeOnly? c2) => c1 == c2,
+                int (TimeOnly? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                TimeOnly? (TimeOnly? c) => c));
 
             var entityTimeSpanValue = runtimeEntityType.AddProperty(
                 "EntityTimeSpanValue",
