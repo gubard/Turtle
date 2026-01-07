@@ -65,6 +65,10 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             id.TypeMapping = SqliteGuidTypeMapping.Default;
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<Guid>(id));
+            id.SetComparer(new ValueComparer<Guid>(
+                bool (Guid c1, Guid c2) => c1 == c2,
+                int (Guid c) => ((object)c).GetHashCode(),
+                Guid (Guid c) => c));
 
             var customAvailableCharacters = runtimeEntityType.AddProperty(
                 "CustomAvailableCharacters",
@@ -523,8 +527,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             parentId.TypeMapping = SqliteGuidTypeMapping.Default;
-            parentId.SetComparer(new NullableValueComparer<Guid>(parentId.TypeMapping.Comparer));
-            parentId.SetKeyComparer(new NullableValueComparer<Guid>(parentId.TypeMapping.KeyComparer));
+            parentId.SetComparer(new ValueComparer<Guid?>(
+                bool (Guid? c1, Guid? c2) => c1 == c2,
+                int (Guid? c) => ((object)c).GetHashCode(),
+                Guid? (Guid? c) => c));
 
             var regex = runtimeEntityType.AddProperty(
                 "Regex",
