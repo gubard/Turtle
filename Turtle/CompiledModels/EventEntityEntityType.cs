@@ -89,7 +89,7 @@ namespace Turtle.CompiledModels
                 sentinel: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
             createdAt.SetGetter(
                 DateTimeOffset (EventEntity instance) => EventEntityUnsafeAccessors.CreatedAt(instance),
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.CreatedAt(instance).EqualsExact(default(DateTimeOffset)));
+                bool (EventEntity instance) => EventEntityUnsafeAccessors.CreatedAt(instance).Equals(default(DateTimeOffset)));
             createdAt.SetSetter(
                 EventEntity (EventEntity instance, DateTimeOffset value) =>
                 {
@@ -114,6 +114,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             createdAt.TypeMapping = SqliteDateTimeOffsetTypeMapping.Default;
+            createdAt.SetComparer(new ValueComparer<DateTimeOffset>(
+                bool (DateTimeOffset c1, DateTimeOffset c2) => c1.Equals(c2),
+                int (DateTimeOffset c) => ((object)c).GetHashCode(),
+                DateTimeOffset (DateTimeOffset c) => c));
 
             var entityBooleanValue = runtimeEntityType.AddProperty(
                 "EntityBooleanValue",
