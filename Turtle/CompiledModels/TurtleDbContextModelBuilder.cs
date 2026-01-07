@@ -15,7 +15,7 @@ namespace Turtle.CompiledModels
     public partial class TurtleDbContextModel
     {
         private TurtleDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("ed73a6de-9b9a-49b7-8833-b9e1c95b4529"), entityTypeCount: 3)
+            : base(skipDetectChanges: false, modelId: new Guid("48374030-399c-4ce1-b4cd-74ded0a45309"), entityTypeCount: 3)
         {
         }
 
@@ -202,7 +202,7 @@ namespace Turtle.CompiledModels
             idColumn.Accessors = ColumnAccessorsFactory.CreateGeneric<long>(idColumn);
             var createdAtColumn = new Column("CreatedAt", "TEXT", eventsTable);
             eventsTable.Columns.Add("CreatedAt", createdAtColumn);
-            createdAtColumn.Accessors = ColumnAccessorsFactory.CreateGeneric<DateTimeOffset>(createdAtColumn);
+            createdAtColumn.Accessors = ColumnAccessorsFactory.CreateGeneric<DateTime>(createdAtColumn);
             var entityBooleanValueColumn = new Column("EntityBooleanValue", "INTEGER", eventsTable)
             {
                 IsNullable = true

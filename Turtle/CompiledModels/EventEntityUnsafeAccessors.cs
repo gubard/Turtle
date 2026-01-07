@@ -14,7 +14,7 @@ namespace Turtle.CompiledModels
         public static extern ref long Id(EventEntity @this);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<CreatedAt>k__BackingField")]
-        public static extern ref DateTimeOffset CreatedAt(EventEntity @this);
+        public static extern ref DateTime CreatedAt(EventEntity @this);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<EntityBooleanValue>k__BackingField")]
         public static extern ref bool? EntityBooleanValue(EventEntity @this);
