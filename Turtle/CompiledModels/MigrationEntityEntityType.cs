@@ -33,6 +33,7 @@ namespace Turtle.CompiledModels
                 typeof(int),
                 propertyInfo: typeof(MigrationEntity).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(MigrationEntity).GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: 0);
             id.SetGetter(
@@ -51,7 +52,7 @@ namespace Turtle.CompiledModels
                     return instance;
                 });
             id.SetAccessors(
-                int (IInternalEntry entry) => MigrationEntityUnsafeAccessors.Id(((MigrationEntity)(entry.Entity))),
+                int (IInternalEntry entry) => (entry.FlaggedAsStoreGenerated(0) ? entry.ReadStoreGeneratedValue<int>(0) : (entry.FlaggedAsTemporary(0) && ((object)MigrationEntityUnsafeAccessors.Id(((MigrationEntity)(entry.Entity)))).Equals(((object)(0))) ? entry.ReadTemporaryValue<int>(0) : MigrationEntityUnsafeAccessors.Id(((MigrationEntity)(entry.Entity))))),
                 int (IInternalEntry entry) => MigrationEntityUnsafeAccessors.Id(((MigrationEntity)(entry.Entity))),
                 int (IInternalEntry entry) => entry.ReadOriginalValue<int>(id, 0),
                 int (IInternalEntry entry) => ((InternalEntityEntry)(entry)).ReadRelationshipSnapshotValue<int>(id, 0));
@@ -60,7 +61,7 @@ namespace Turtle.CompiledModels
                 originalValueIndex: 0,
                 shadowIndex: -1,
                 relationshipIndex: 0,
-                storeGenerationIndex: -1);
+                storeGenerationIndex: 0);
             id.TypeMapping = IntTypeMapping.Default.Clone(
                 comparer: new ValueComparer<int>(
                     bool (int v1, int v2) => v1 == v2,
@@ -140,9 +141,9 @@ namespace Turtle.CompiledModels
                     return ((ISnapshot)(new Snapshot<int, string>(((ValueComparer<int>)(((IProperty)id).GetValueComparer())).Snapshot(source.GetCurrentValue<int>(id)), (source.GetCurrentValue<string>(sql) == null ? null : ((ValueComparer<string>)(((IProperty)sql).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(sql))))));
                 });
             runtimeEntityType.SetStoreGeneratedValuesFactory(
-                ISnapshot () => Snapshot.Empty);
+                ISnapshot () => ((ISnapshot)(new Snapshot<int>(((ValueComparer<int>)(((IProperty)id).GetValueComparer())).Snapshot(default(int))))));
             runtimeEntityType.SetTemporaryValuesFactory(
-                ISnapshot (IInternalEntry source) => Snapshot.Empty);
+                ISnapshot (IInternalEntry source) => ((ISnapshot)(new Snapshot<int>(default(int)))));
             runtimeEntityType.SetShadowValuesFactory(
                 ISnapshot (IDictionary<string, object> source) => Snapshot.Empty);
             runtimeEntityType.SetEmptyShadowValuesFactory(
@@ -161,7 +162,7 @@ namespace Turtle.CompiledModels
                 originalValueCount: 2,
                 shadowCount: 0,
                 relationshipCount: 1,
-                storeGeneratedCount: 0));
+                storeGeneratedCount: 1));
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);

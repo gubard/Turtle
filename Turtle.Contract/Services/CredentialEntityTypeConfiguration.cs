@@ -10,7 +10,7 @@ public sealed class CredentialEntityTypeConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<CredentialEntity> builder)
     {
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Id).ValueGeneratedNever().SetComparerStruct();
+        builder.Property(e => e.Id).SetComparerStruct();
         builder.Property(e => e.Name).HasMaxLength(255).SetComparerClass();
         builder.Property(e => e.Login).HasMaxLength(255).SetComparerClass();
         builder.Property(e => e.Key).HasMaxLength(255).SetComparerClass();

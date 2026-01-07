@@ -35,6 +35,7 @@ namespace Turtle.CompiledModels
                 typeof(Guid),
                 propertyInfo: typeof(CredentialEntity).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(CredentialEntity).GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
             id.SetGetter(
@@ -53,7 +54,7 @@ namespace Turtle.CompiledModels
                     return instance;
                 });
             id.SetAccessors(
-                Guid (IInternalEntry entry) => CredentialEntityUnsafeAccessors.Id(((CredentialEntity)(entry.Entity))),
+                Guid (IInternalEntry entry) => (entry.FlaggedAsStoreGenerated(0) ? entry.ReadStoreGeneratedValue<Guid>(0) : (entry.FlaggedAsTemporary(0) && ((object)CredentialEntityUnsafeAccessors.Id(((CredentialEntity)(entry.Entity)))).Equals(((object)(new Guid("00000000-0000-0000-0000-000000000000")))) ? entry.ReadTemporaryValue<Guid>(0) : CredentialEntityUnsafeAccessors.Id(((CredentialEntity)(entry.Entity))))),
                 Guid (IInternalEntry entry) => CredentialEntityUnsafeAccessors.Id(((CredentialEntity)(entry.Entity))),
                 Guid (IInternalEntry entry) => entry.ReadOriginalValue<Guid>(id, 0),
                 Guid (IInternalEntry entry) => ((InternalEntityEntry)(entry)).ReadRelationshipSnapshotValue<Guid>(id, 0));
@@ -62,7 +63,7 @@ namespace Turtle.CompiledModels
                 originalValueIndex: 0,
                 shadowIndex: -1,
                 relationshipIndex: 0,
-                storeGenerationIndex: -1);
+                storeGenerationIndex: 0);
             id.TypeMapping = SqliteGuidTypeMapping.Default;
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<Guid>(id));
             id.SetComparer(new ValueComparer<Guid>(
@@ -703,9 +704,9 @@ namespace Turtle.CompiledModels
                     return ((ISnapshot)(new Snapshot<Guid, string, bool, bool, bool, bool, string, ushort, string, string, uint, Guid?, string, CredentialType>(((ValueComparer<Guid>)(((IProperty)id).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid>(id)), (source.GetCurrentValue<string>(customAvailableCharacters) == null ? null : ((ValueComparer<string>)(((IProperty)customAvailableCharacters).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(customAvailableCharacters))), ((ValueComparer<bool>)(((IProperty)isAvailableLowerLatin).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isAvailableLowerLatin)), ((ValueComparer<bool>)(((IProperty)isAvailableNumber).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isAvailableNumber)), ((ValueComparer<bool>)(((IProperty)isAvailableSpecialSymbols).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isAvailableSpecialSymbols)), ((ValueComparer<bool>)(((IProperty)isAvailableUpperLatin).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isAvailableUpperLatin)), (source.GetCurrentValue<string>(key) == null ? null : ((ValueComparer<string>)(((IProperty)key).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(key))), ((ValueComparer<ushort>)(((IProperty)length).GetValueComparer())).Snapshot(source.GetCurrentValue<ushort>(length)), (source.GetCurrentValue<string>(login) == null ? null : ((ValueComparer<string>)(((IProperty)login).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(login))), (source.GetCurrentValue<string>(name) == null ? null : ((ValueComparer<string>)(((IProperty)name).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(name))), ((ValueComparer<uint>)(((IProperty)orderIndex).GetValueComparer())).Snapshot(source.GetCurrentValue<uint>(orderIndex)), (source.GetCurrentValue<Guid?>(parentId) == null ? null : ((ValueComparer<Guid?>)(((IProperty)parentId).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid?>(parentId))), (source.GetCurrentValue<string>(regex) == null ? null : ((ValueComparer<string>)(((IProperty)regex).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(regex))), ((ValueComparer<CredentialType>)(((IProperty)type).GetValueComparer())).Snapshot(source.GetCurrentValue<CredentialType>(type)))));
                 });
             runtimeEntityType.SetStoreGeneratedValuesFactory(
-                ISnapshot () => Snapshot.Empty);
+                ISnapshot () => ((ISnapshot)(new Snapshot<Guid>(((ValueComparer<Guid>)(((IProperty)id).GetValueComparer())).Snapshot(default(Guid))))));
             runtimeEntityType.SetTemporaryValuesFactory(
-                ISnapshot (IInternalEntry source) => Snapshot.Empty);
+                ISnapshot (IInternalEntry source) => ((ISnapshot)(new Snapshot<Guid>(default(Guid)))));
             runtimeEntityType.SetShadowValuesFactory(
                 ISnapshot (IDictionary<string, object> source) => Snapshot.Empty);
             runtimeEntityType.SetEmptyShadowValuesFactory(
@@ -724,7 +725,7 @@ namespace Turtle.CompiledModels
                 originalValueCount: 14,
                 shadowCount: 0,
                 relationshipCount: 1,
-                storeGeneratedCount: 0));
+                storeGeneratedCount: 1));
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);
