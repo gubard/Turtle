@@ -37,7 +37,7 @@ namespace Turtle.CompiledModels
                 sentinel: 0);
             id.SetGetter(
                 int (MigrationEntity instance) => MigrationEntityUnsafeAccessors.Id(instance),
-                bool (MigrationEntity instance) => MigrationEntityUnsafeAccessors.Id(instance) == 0);
+                bool (MigrationEntity instance) => ((object)MigrationEntityUnsafeAccessors.Id(instance)).Equals(((object)(0))));
             id.SetSetter(
                 MigrationEntity (MigrationEntity instance, int value) =>
                 {
@@ -77,6 +77,10 @@ namespace Turtle.CompiledModels
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<int>(id));
+            id.SetComparer(new ValueComparer<int>(
+                bool (int c1, int c2) => ((object)c1).Equals(((object)(c2))),
+                int (int c) => ((object)c).GetHashCode(),
+                int (int c) => c));
 
             var sql = runtimeEntityType.AddProperty(
                 "Sql",
@@ -110,6 +114,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             sql.TypeMapping = SqliteStringTypeMapping.Default;
+            sql.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

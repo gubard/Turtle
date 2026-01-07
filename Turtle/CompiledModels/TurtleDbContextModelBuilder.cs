@@ -15,7 +15,7 @@ namespace Turtle.CompiledModels
     public partial class TurtleDbContextModel
     {
         private TurtleDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("acceda1b-8dbc-462a-bf6d-3c46114c1cf4"), entityTypeCount: 3)
+            : base(skipDetectChanges: false, modelId: new Guid("41c4379e-437e-4029-ba7b-fb3c3e59666a"), entityTypeCount: 3)
         {
         }
 

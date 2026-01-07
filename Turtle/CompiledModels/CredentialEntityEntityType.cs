@@ -39,7 +39,7 @@ namespace Turtle.CompiledModels
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
             id.SetGetter(
                 Guid (CredentialEntity instance) => CredentialEntityUnsafeAccessors.Id(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.Id(instance) == new Guid("00000000-0000-0000-0000-000000000000"));
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.Id(instance)).Equals(((object)(new Guid("00000000-0000-0000-0000-000000000000")))));
             id.SetSetter(
                 CredentialEntity (CredentialEntity instance, Guid value) =>
                 {
@@ -66,7 +66,7 @@ namespace Turtle.CompiledModels
             id.TypeMapping = SqliteGuidTypeMapping.Default;
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<Guid>(id));
             id.SetComparer(new ValueComparer<Guid>(
-                bool (Guid c1, Guid c2) => c1 == c2,
+                bool (Guid c1, Guid c2) => ((object)c1).Equals(((object)(c2))),
                 int (Guid c) => ((object)c).GetHashCode(),
                 Guid (Guid c) => c));
 
@@ -103,6 +103,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             customAvailableCharacters.TypeMapping = SqliteStringTypeMapping.Default;
+            customAvailableCharacters.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var isAvailableLowerLatin = runtimeEntityType.AddProperty(
                 "IsAvailableLowerLatin",
@@ -112,7 +116,7 @@ namespace Turtle.CompiledModels
                 sentinel: false);
             isAvailableLowerLatin.SetGetter(
                 bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableLowerLatin(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableLowerLatin(instance) == false);
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.IsAvailableLowerLatin(instance)).Equals(((object)(false))));
             isAvailableLowerLatin.SetSetter(
                 CredentialEntity (CredentialEntity instance, bool value) =>
                 {
@@ -151,6 +155,10 @@ namespace Turtle.CompiledModels
                     bool (bool v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            isAvailableLowerLatin.SetComparer(new ValueComparer<bool>(
+                bool (bool c1, bool c2) => ((object)c1).Equals(((object)(c2))),
+                int (bool c) => ((object)c).GetHashCode(),
+                bool (bool c) => c));
 
             var isAvailableNumber = runtimeEntityType.AddProperty(
                 "IsAvailableNumber",
@@ -160,7 +168,7 @@ namespace Turtle.CompiledModels
                 sentinel: false);
             isAvailableNumber.SetGetter(
                 bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableNumber(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableNumber(instance) == false);
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.IsAvailableNumber(instance)).Equals(((object)(false))));
             isAvailableNumber.SetSetter(
                 CredentialEntity (CredentialEntity instance, bool value) =>
                 {
@@ -199,6 +207,10 @@ namespace Turtle.CompiledModels
                     bool (bool v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            isAvailableNumber.SetComparer(new ValueComparer<bool>(
+                bool (bool c1, bool c2) => ((object)c1).Equals(((object)(c2))),
+                int (bool c) => ((object)c).GetHashCode(),
+                bool (bool c) => c));
 
             var isAvailableSpecialSymbols = runtimeEntityType.AddProperty(
                 "IsAvailableSpecialSymbols",
@@ -208,7 +220,7 @@ namespace Turtle.CompiledModels
                 sentinel: false);
             isAvailableSpecialSymbols.SetGetter(
                 bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableSpecialSymbols(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableSpecialSymbols(instance) == false);
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.IsAvailableSpecialSymbols(instance)).Equals(((object)(false))));
             isAvailableSpecialSymbols.SetSetter(
                 CredentialEntity (CredentialEntity instance, bool value) =>
                 {
@@ -247,6 +259,10 @@ namespace Turtle.CompiledModels
                     bool (bool v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            isAvailableSpecialSymbols.SetComparer(new ValueComparer<bool>(
+                bool (bool c1, bool c2) => ((object)c1).Equals(((object)(c2))),
+                int (bool c) => ((object)c).GetHashCode(),
+                bool (bool c) => c));
 
             var isAvailableUpperLatin = runtimeEntityType.AddProperty(
                 "IsAvailableUpperLatin",
@@ -256,7 +272,7 @@ namespace Turtle.CompiledModels
                 sentinel: false);
             isAvailableUpperLatin.SetGetter(
                 bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableUpperLatin(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.IsAvailableUpperLatin(instance) == false);
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.IsAvailableUpperLatin(instance)).Equals(((object)(false))));
             isAvailableUpperLatin.SetSetter(
                 CredentialEntity (CredentialEntity instance, bool value) =>
                 {
@@ -295,6 +311,10 @@ namespace Turtle.CompiledModels
                     bool (bool v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            isAvailableUpperLatin.SetComparer(new ValueComparer<bool>(
+                bool (bool c1, bool c2) => ((object)c1).Equals(((object)(c2))),
+                int (bool c) => ((object)c).GetHashCode(),
+                bool (bool c) => c));
 
             var key = runtimeEntityType.AddProperty(
                 "Key",
@@ -329,6 +349,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             key.TypeMapping = SqliteStringTypeMapping.Default;
+            key.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var length = runtimeEntityType.AddProperty(
                 "Length",
@@ -338,7 +362,7 @@ namespace Turtle.CompiledModels
                 sentinel: (ushort)0);
             length.SetGetter(
                 ushort (CredentialEntity instance) => CredentialEntityUnsafeAccessors.Length(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.Length(instance) == 0);
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.Length(instance)).Equals(((object)(0))));
             length.SetSetter(
                 CredentialEntity (CredentialEntity instance, ushort value) =>
                 {
@@ -377,6 +401,10 @@ namespace Turtle.CompiledModels
                     ushort (ushort v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            length.SetComparer(new ValueComparer<ushort>(
+                bool (ushort c1, ushort c2) => ((object)c1).Equals(((object)(c2))),
+                int (ushort c) => ((object)c).GetHashCode(),
+                ushort (ushort c) => c));
 
             var login = runtimeEntityType.AddProperty(
                 "Login",
@@ -411,6 +439,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             login.TypeMapping = SqliteStringTypeMapping.Default;
+            login.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var name = runtimeEntityType.AddProperty(
                 "Name",
@@ -445,6 +477,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             name.TypeMapping = SqliteStringTypeMapping.Default;
+            name.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var orderIndex = runtimeEntityType.AddProperty(
                 "OrderIndex",
@@ -454,7 +490,7 @@ namespace Turtle.CompiledModels
                 sentinel: 0u);
             orderIndex.SetGetter(
                 uint (CredentialEntity instance) => CredentialEntityUnsafeAccessors.OrderIndex(instance),
-                bool (CredentialEntity instance) => CredentialEntityUnsafeAccessors.OrderIndex(instance) == 0U);
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.OrderIndex(instance)).Equals(((object)(0U))));
             orderIndex.SetSetter(
                 CredentialEntity (CredentialEntity instance, uint value) =>
                 {
@@ -493,6 +529,10 @@ namespace Turtle.CompiledModels
                     uint (uint v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            orderIndex.SetComparer(new ValueComparer<uint>(
+                bool (uint c1, uint c2) => ((object)c1).Equals(((object)(c2))),
+                int (uint c) => ((object)c).GetHashCode(),
+                uint (uint c) => c));
 
             var parentId = runtimeEntityType.AddProperty(
                 "ParentId",
@@ -528,7 +568,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             parentId.TypeMapping = SqliteGuidTypeMapping.Default;
             parentId.SetComparer(new ValueComparer<Guid?>(
-                bool (Guid? c1, Guid? c2) => c1 == c2,
+                bool (Guid? c1, Guid? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (Guid? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 Guid? (Guid? c) => c));
 
@@ -565,6 +605,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             regex.TypeMapping = SqliteStringTypeMapping.Default;
+            regex.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var type = runtimeEntityType.AddProperty(
                 "Type",
@@ -573,7 +617,7 @@ namespace Turtle.CompiledModels
                 fieldInfo: typeof(CredentialEntity).GetField("<Type>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
             type.SetGetter(
                 CredentialType (CredentialEntity instance) => CredentialEntityUnsafeAccessors.Type(instance),
-                bool (CredentialEntity instance) => object.Equals(((object)(CredentialEntityUnsafeAccessors.Type(instance))), ((object)(CredentialType.Value))));
+                bool (CredentialEntity instance) => ((object)CredentialEntityUnsafeAccessors.Type(instance)).Equals(((object)(CredentialType.Value))));
             type.SetSetter(
                 CredentialEntity (CredentialEntity instance, CredentialType value) =>
                 {
@@ -620,6 +664,10 @@ namespace Turtle.CompiledModels
                     new ValueConverter<CredentialType, byte>(
                         byte (CredentialType value) => ((byte)(value)),
                         CredentialType (byte value) => ((CredentialType)(value)))));
+            type.SetComparer(new ValueComparer<CredentialType>(
+                bool (CredentialType c1, CredentialType c2) => ((object)c1).Equals(((object)(c2))),
+                int (CredentialType c) => ((object)c).GetHashCode(),
+                CredentialType (CredentialType c) => c));
             type.SetSentinelFromProviderValue((byte)0);
 
             var key0 = runtimeEntityType.AddKey(

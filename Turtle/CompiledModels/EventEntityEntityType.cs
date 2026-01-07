@@ -40,7 +40,7 @@ namespace Turtle.CompiledModels
                 sentinel: 0L);
             id.SetGetter(
                 long (EventEntity instance) => EventEntityUnsafeAccessors.Id(instance),
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.Id(instance) == 0L);
+                bool (EventEntity instance) => ((object)EventEntityUnsafeAccessors.Id(instance)).Equals(((object)(0L))));
             id.SetSetter(
                 EventEntity (EventEntity instance, long value) =>
                 {
@@ -54,7 +54,7 @@ namespace Turtle.CompiledModels
                     return instance;
                 });
             id.SetAccessors(
-                long (IInternalEntry entry) => (entry.FlaggedAsStoreGenerated(0) ? entry.ReadStoreGeneratedValue<long>(0) : (entry.FlaggedAsTemporary(0) && EventEntityUnsafeAccessors.Id(((EventEntity)(entry.Entity))) == 0L ? entry.ReadTemporaryValue<long>(0) : EventEntityUnsafeAccessors.Id(((EventEntity)(entry.Entity))))),
+                long (IInternalEntry entry) => (entry.FlaggedAsStoreGenerated(0) ? entry.ReadStoreGeneratedValue<long>(0) : (entry.FlaggedAsTemporary(0) && ((object)EventEntityUnsafeAccessors.Id(((EventEntity)(entry.Entity)))).Equals(((object)(0L))) ? entry.ReadTemporaryValue<long>(0) : EventEntityUnsafeAccessors.Id(((EventEntity)(entry.Entity))))),
                 long (IInternalEntry entry) => EventEntityUnsafeAccessors.Id(((EventEntity)(entry.Entity))),
                 long (IInternalEntry entry) => entry.ReadOriginalValue<long>(id, 0),
                 long (IInternalEntry entry) => ((InternalEntityEntry)(entry)).ReadRelationshipSnapshotValue<long>(id, 0));
@@ -80,6 +80,10 @@ namespace Turtle.CompiledModels
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<long>(id));
+            id.SetComparer(new ValueComparer<long>(
+                bool (long c1, long c2) => ((object)c1).Equals(((object)(c2))),
+                int (long c) => ((object)c).GetHashCode(),
+                long (long c) => c));
 
             var createdAt = runtimeEntityType.AddProperty(
                 "CreatedAt",
@@ -89,7 +93,7 @@ namespace Turtle.CompiledModels
                 sentinel: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
             createdAt.SetGetter(
                 DateTimeOffset (EventEntity instance) => EventEntityUnsafeAccessors.CreatedAt(instance),
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.CreatedAt(instance) == default(DateTimeOffset));
+                bool (EventEntity instance) => ((object)EventEntityUnsafeAccessors.CreatedAt(instance)).Equals(((object)(default(DateTimeOffset)))));
             createdAt.SetSetter(
                 EventEntity (EventEntity instance, DateTimeOffset value) =>
                 {
@@ -115,7 +119,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             createdAt.TypeMapping = SqliteDateTimeOffsetTypeMapping.Default;
             createdAt.SetComparer(new ValueComparer<DateTimeOffset>(
-                bool (DateTimeOffset c1, DateTimeOffset c2) => c1 == c2,
+                bool (DateTimeOffset c1, DateTimeOffset c2) => ((object)c1).Equals(((object)(c2))),
                 int (DateTimeOffset c) => ((object)c).GetHashCode(),
                 DateTimeOffset (DateTimeOffset c) => c));
 
@@ -166,8 +170,10 @@ namespace Turtle.CompiledModels
                     bool (bool v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityBooleanValue.SetComparer(new NullableValueComparer<bool>(entityBooleanValue.TypeMapping.Comparer));
-            entityBooleanValue.SetKeyComparer(new NullableValueComparer<bool>(entityBooleanValue.TypeMapping.KeyComparer));
+            entityBooleanValue.SetComparer(new ValueComparer<bool?>(
+                bool (bool? c1, bool? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (bool? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                bool? (bool? c) => c));
 
             var entityByteArrayValue = runtimeEntityType.AddProperty(
                 "EntityByteArrayValue",
@@ -214,6 +220,10 @@ namespace Turtle.CompiledModels
                     bool (byte[] v1, byte[] v2) => StructuralComparisons.StructuralEqualityComparer.Equals(((object)(v1)), ((object)(v2))),
                     int (byte[] v) => StructuralComparisons.StructuralEqualityComparer.GetHashCode(((object)(v))),
                     byte[] (byte[] source) => source.ToArray()));
+            entityByteArrayValue.SetComparer(new ValueComparer<byte[]>(
+                bool (byte[] c1, byte[] c2) => c1 == c2,
+                int (byte[] c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                byte[] (byte[] c) => c));
 
             var entityByteValue = runtimeEntityType.AddProperty(
                 "EntityByteValue",
@@ -262,8 +272,10 @@ namespace Turtle.CompiledModels
                     byte (byte v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityByteValue.SetComparer(new NullableValueComparer<byte>(entityByteValue.TypeMapping.Comparer));
-            entityByteValue.SetKeyComparer(new NullableValueComparer<byte>(entityByteValue.TypeMapping.KeyComparer));
+            entityByteValue.SetComparer(new ValueComparer<byte?>(
+                bool (byte? c1, byte? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (byte? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                byte? (byte? c) => c));
 
             var entityCharValue = runtimeEntityType.AddProperty(
                 "EntityCharValue",
@@ -312,8 +324,10 @@ namespace Turtle.CompiledModels
                     char (char v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "TEXT"));
-            entityCharValue.SetComparer(new NullableValueComparer<char>(entityCharValue.TypeMapping.Comparer));
-            entityCharValue.SetKeyComparer(new NullableValueComparer<char>(entityCharValue.TypeMapping.KeyComparer));
+            entityCharValue.SetComparer(new ValueComparer<char?>(
+                bool (char? c1, char? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (char? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                char? (char? c) => c));
 
             var entityDateOnlyValue = runtimeEntityType.AddProperty(
                 "EntityDateOnlyValue",
@@ -349,7 +363,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityDateOnlyValue.TypeMapping = SqliteDateOnlyTypeMapping.Default;
             entityDateOnlyValue.SetComparer(new ValueComparer<DateOnly?>(
-                bool (DateOnly? c1, DateOnly? c2) => c1 == c2,
+                bool (DateOnly? c1, DateOnly? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (DateOnly? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 DateOnly? (DateOnly? c) => c));
 
@@ -387,7 +401,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityDateTimeOffsetValue.TypeMapping = SqliteDateTimeOffsetTypeMapping.Default;
             entityDateTimeOffsetValue.SetComparer(new ValueComparer<DateTimeOffset?>(
-                bool (DateTimeOffset? c1, DateTimeOffset? c2) => c1 == c2,
+                bool (DateTimeOffset? c1, DateTimeOffset? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (DateTimeOffset? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 DateTimeOffset? (DateTimeOffset? c) => c));
 
@@ -425,7 +439,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityDateTimeValue.TypeMapping = SqliteDateTimeTypeMapping.Default;
             entityDateTimeValue.SetComparer(new ValueComparer<DateTime?>(
-                bool (DateTime? c1, DateTime? c2) => c1 == c2,
+                bool (DateTime? c1, DateTime? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (DateTime? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 DateTime? (DateTime? c) => c));
 
@@ -463,7 +477,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityDecimalValue.TypeMapping = SqliteDecimalTypeMapping.Default;
             entityDecimalValue.SetComparer(new ValueComparer<decimal?>(
-                bool (decimal? c1, decimal? c2) => c1 == c2,
+                bool (decimal? c1, decimal? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (decimal? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 decimal? (decimal? c) => c));
 
@@ -514,8 +528,10 @@ namespace Turtle.CompiledModels
                     double (double v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "REAL"));
-            entityDoubleValue.SetComparer(new NullableValueComparer<double>(entityDoubleValue.TypeMapping.Comparer));
-            entityDoubleValue.SetKeyComparer(new NullableValueComparer<double>(entityDoubleValue.TypeMapping.KeyComparer));
+            entityDoubleValue.SetComparer(new ValueComparer<double?>(
+                bool (double? c1, double? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (double? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                double? (double? c) => c));
 
             var entityGuidValue = runtimeEntityType.AddProperty(
                 "EntityGuidValue",
@@ -551,7 +567,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityGuidValue.TypeMapping = SqliteGuidTypeMapping.Default;
             entityGuidValue.SetComparer(new ValueComparer<Guid?>(
-                bool (Guid? c1, Guid? c2) => c1 == c2,
+                bool (Guid? c1, Guid? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (Guid? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 Guid? (Guid? c) => c));
 
@@ -563,7 +579,7 @@ namespace Turtle.CompiledModels
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
             entityId.SetGetter(
                 Guid (EventEntity instance) => EventEntityUnsafeAccessors.EntityId(instance),
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.EntityId(instance) == new Guid("00000000-0000-0000-0000-000000000000"));
+                bool (EventEntity instance) => ((object)EventEntityUnsafeAccessors.EntityId(instance)).Equals(((object)(new Guid("00000000-0000-0000-0000-000000000000")))));
             entityId.SetSetter(
                 EventEntity (EventEntity instance, Guid value) =>
                 {
@@ -589,7 +605,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityId.TypeMapping = SqliteGuidTypeMapping.Default;
             entityId.SetComparer(new ValueComparer<Guid>(
-                bool (Guid c1, Guid c2) => c1 == c2,
+                bool (Guid c1, Guid c2) => ((object)c1).Equals(((object)(c2))),
                 int (Guid c) => ((object)c).GetHashCode(),
                 Guid (Guid c) => c));
 
@@ -640,8 +656,10 @@ namespace Turtle.CompiledModels
                     short (short v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityInt16Value.SetComparer(new NullableValueComparer<short>(entityInt16Value.TypeMapping.Comparer));
-            entityInt16Value.SetKeyComparer(new NullableValueComparer<short>(entityInt16Value.TypeMapping.KeyComparer));
+            entityInt16Value.SetComparer(new ValueComparer<short?>(
+                bool (short? c1, short? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (short? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                short? (short? c) => c));
 
             var entityInt32Value = runtimeEntityType.AddProperty(
                 "EntityInt32Value",
@@ -690,8 +708,10 @@ namespace Turtle.CompiledModels
                     int (int v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityInt32Value.SetComparer(new NullableValueComparer<int>(entityInt32Value.TypeMapping.Comparer));
-            entityInt32Value.SetKeyComparer(new NullableValueComparer<int>(entityInt32Value.TypeMapping.KeyComparer));
+            entityInt32Value.SetComparer(new ValueComparer<int?>(
+                bool (int? c1, int? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (int? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                int? (int? c) => c));
 
             var entityInt64Value = runtimeEntityType.AddProperty(
                 "EntityInt64Value",
@@ -740,8 +760,10 @@ namespace Turtle.CompiledModels
                     long (long v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityInt64Value.SetComparer(new NullableValueComparer<long>(entityInt64Value.TypeMapping.Comparer));
-            entityInt64Value.SetKeyComparer(new NullableValueComparer<long>(entityInt64Value.TypeMapping.KeyComparer));
+            entityInt64Value.SetComparer(new ValueComparer<long?>(
+                bool (long? c1, long? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (long? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                long? (long? c) => c));
 
             var entityProperty = runtimeEntityType.AddProperty(
                 "EntityProperty",
@@ -776,6 +798,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityProperty.TypeMapping = SqliteStringTypeMapping.Default;
+            entityProperty.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var entitySByteValue = runtimeEntityType.AddProperty(
                 "EntitySByteValue",
@@ -824,8 +850,10 @@ namespace Turtle.CompiledModels
                     sbyte (sbyte v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entitySByteValue.SetComparer(new NullableValueComparer<sbyte>(entitySByteValue.TypeMapping.Comparer));
-            entitySByteValue.SetKeyComparer(new NullableValueComparer<sbyte>(entitySByteValue.TypeMapping.KeyComparer));
+            entitySByteValue.SetComparer(new ValueComparer<sbyte?>(
+                bool (sbyte? c1, sbyte? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (sbyte? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                sbyte? (sbyte? c) => c));
 
             var entitySingleValue = runtimeEntityType.AddProperty(
                 "EntitySingleValue",
@@ -874,8 +902,10 @@ namespace Turtle.CompiledModels
                     float (float v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "REAL"));
-            entitySingleValue.SetComparer(new NullableValueComparer<float>(entitySingleValue.TypeMapping.Comparer));
-            entitySingleValue.SetKeyComparer(new NullableValueComparer<float>(entitySingleValue.TypeMapping.KeyComparer));
+            entitySingleValue.SetComparer(new ValueComparer<float?>(
+                bool (float? c1, float? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (float? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                float? (float? c) => c));
 
             var entityStringValue = runtimeEntityType.AddProperty(
                 "EntityStringValue",
@@ -910,6 +940,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityStringValue.TypeMapping = SqliteStringTypeMapping.Default;
+            entityStringValue.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                string (string c) => c));
 
             var entityTimeOnlyValue = runtimeEntityType.AddProperty(
                 "EntityTimeOnlyValue",
@@ -945,7 +979,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             entityTimeOnlyValue.TypeMapping = SqliteTimeOnlyTypeMapping.Default;
             entityTimeOnlyValue.SetComparer(new ValueComparer<TimeOnly?>(
-                bool (TimeOnly? c1, TimeOnly? c2) => c1 == c2,
+                bool (TimeOnly? c1, TimeOnly? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
                 int (TimeOnly? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 TimeOnly? (TimeOnly? c) => c));
 
@@ -996,8 +1030,10 @@ namespace Turtle.CompiledModels
                     TimeSpan (TimeSpan v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "TEXT"));
-            entityTimeSpanValue.SetComparer(new NullableValueComparer<TimeSpan>(entityTimeSpanValue.TypeMapping.Comparer));
-            entityTimeSpanValue.SetKeyComparer(new NullableValueComparer<TimeSpan>(entityTimeSpanValue.TypeMapping.KeyComparer));
+            entityTimeSpanValue.SetComparer(new ValueComparer<TimeSpan?>(
+                bool (TimeSpan? c1, TimeSpan? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (TimeSpan? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                TimeSpan? (TimeSpan? c) => c));
 
             var entityType = runtimeEntityType.AddProperty(
                 "EntityType",
@@ -1032,6 +1068,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityType.TypeMapping = SqliteStringTypeMapping.Default;
+            entityType.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var entityUInt16Value = runtimeEntityType.AddProperty(
                 "EntityUInt16Value",
@@ -1080,8 +1120,10 @@ namespace Turtle.CompiledModels
                     ushort (ushort v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityUInt16Value.SetComparer(new NullableValueComparer<ushort>(entityUInt16Value.TypeMapping.Comparer));
-            entityUInt16Value.SetKeyComparer(new NullableValueComparer<ushort>(entityUInt16Value.TypeMapping.KeyComparer));
+            entityUInt16Value.SetComparer(new ValueComparer<ushort?>(
+                bool (ushort? c1, ushort? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (ushort? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                ushort? (ushort? c) => c));
 
             var entityUInt32Value = runtimeEntityType.AddProperty(
                 "EntityUInt32Value",
@@ -1130,8 +1172,10 @@ namespace Turtle.CompiledModels
                     uint (uint v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
-            entityUInt32Value.SetComparer(new NullableValueComparer<uint>(entityUInt32Value.TypeMapping.Comparer));
-            entityUInt32Value.SetKeyComparer(new NullableValueComparer<uint>(entityUInt32Value.TypeMapping.KeyComparer));
+            entityUInt32Value.SetComparer(new ValueComparer<uint?>(
+                bool (uint? c1, uint? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (uint? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                uint? (uint? c) => c));
 
             var entityUInt64Value = runtimeEntityType.AddProperty(
                 "EntityUInt64Value",
@@ -1166,8 +1210,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityUInt64Value.TypeMapping = SqliteULongTypeMapping.Default;
-            entityUInt64Value.SetComparer(new NullableValueComparer<ulong>(entityUInt64Value.TypeMapping.Comparer));
-            entityUInt64Value.SetKeyComparer(new NullableValueComparer<ulong>(entityUInt64Value.TypeMapping.KeyComparer));
+            entityUInt64Value.SetComparer(new ValueComparer<ulong?>(
+                bool (ulong? c1, ulong? c2) => c1.HasValue || c2.HasValue && c1.HasValue && c2.HasValue && ((object)c1.Value).Equals(((object)(c2.Value))),
+                int (ulong? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                ulong? (ulong? c) => c));
 
             var transactionId = runtimeEntityType.AddProperty(
                 "TransactionId",
@@ -1177,7 +1223,7 @@ namespace Turtle.CompiledModels
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
             transactionId.SetGetter(
                 Guid (EventEntity instance) => EventEntityUnsafeAccessors.TransactionId(instance),
-                bool (EventEntity instance) => EventEntityUnsafeAccessors.TransactionId(instance) == new Guid("00000000-0000-0000-0000-000000000000"));
+                bool (EventEntity instance) => ((object)EventEntityUnsafeAccessors.TransactionId(instance)).Equals(((object)(new Guid("00000000-0000-0000-0000-000000000000")))));
             transactionId.SetSetter(
                 EventEntity (EventEntity instance, Guid value) =>
                 {
@@ -1203,7 +1249,7 @@ namespace Turtle.CompiledModels
                 storeGenerationIndex: -1);
             transactionId.TypeMapping = SqliteGuidTypeMapping.Default;
             transactionId.SetComparer(new ValueComparer<Guid>(
-                bool (Guid c1, Guid c2) => c1 == c2,
+                bool (Guid c1, Guid c2) => ((object)c1).Equals(((object)(c2))),
                 int (Guid c) => ((object)c).GetHashCode(),
                 Guid (Guid c) => c));
 
@@ -1240,6 +1286,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             userId.TypeMapping = SqliteStringTypeMapping.Default;
+            userId.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });
