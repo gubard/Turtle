@@ -384,10 +384,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityDateTimeOffsetValue.TypeMapping = SqliteDateTimeOffsetTypeMapping.Default;
-            entityDateTimeOffsetValue.SetComparer(new NullableValueComparer<DateTimeOffset>(new ValueComparer<DateTimeOffset>(
-                bool (DateTimeOffset c1, DateTimeOffset c2) => c1.Equals(c2),
-                int (DateTimeOffset c) => ((object)c).GetHashCode(),
-                DateTimeOffset (DateTimeOffset c) => c)));
+            entityDateTimeOffsetValue.SetComparer(new ValueComparer<DateTimeOffset?>(
+                bool (DateTimeOffset? c1, DateTimeOffset? c2) => c1 == null && c2 == null || c1 != null && ((object)c1).Equals(((object)(c2))),
+                int (DateTimeOffset? c) => ((object)c).GetHashCode(),
+                DateTimeOffset? (DateTimeOffset? c) => c));
 
             var entityDateTimeValue = runtimeEntityType.AddProperty(
                 "EntityDateTimeValue",
