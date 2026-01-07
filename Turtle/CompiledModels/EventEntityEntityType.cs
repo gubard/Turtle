@@ -424,8 +424,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityDateTimeValue.TypeMapping = SqliteDateTimeTypeMapping.Default;
-            entityDateTimeValue.SetComparer(new NullableValueComparer<DateTime>(entityDateTimeValue.TypeMapping.Comparer));
-            entityDateTimeValue.SetKeyComparer(new NullableValueComparer<DateTime>(entityDateTimeValue.TypeMapping.KeyComparer));
+            entityDateTimeValue.SetComparer(new ValueComparer<DateTime?>(
+                bool (DateTime? c1, DateTime? c2) => c1 == c2,
+                int (DateTime? c) => ((object)c).GetHashCode(),
+                DateTime? (DateTime? c) => c));
 
             var entityDecimalValue = runtimeEntityType.AddProperty(
                 "EntityDecimalValue",
