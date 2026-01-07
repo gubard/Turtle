@@ -350,7 +350,7 @@ namespace Turtle.CompiledModels
             entityDateOnlyValue.TypeMapping = SqliteDateOnlyTypeMapping.Default;
             entityDateOnlyValue.SetComparer(new ValueComparer<DateOnly?>(
                 bool (DateOnly? c1, DateOnly? c2) => c1 == c2,
-                int (DateOnly? c) => ((object)c).GetHashCode(),
+                int (DateOnly? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 DateOnly? (DateOnly? c) => c));
 
             var entityDateTimeOffsetValue = runtimeEntityType.AddProperty(
@@ -388,7 +388,7 @@ namespace Turtle.CompiledModels
             entityDateTimeOffsetValue.TypeMapping = SqliteDateTimeOffsetTypeMapping.Default;
             entityDateTimeOffsetValue.SetComparer(new ValueComparer<DateTimeOffset?>(
                 bool (DateTimeOffset? c1, DateTimeOffset? c2) => c1 == c2,
-                int (DateTimeOffset? c) => ((object)c).GetHashCode(),
+                int (DateTimeOffset? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 DateTimeOffset? (DateTimeOffset? c) => c));
 
             var entityDateTimeValue = runtimeEntityType.AddProperty(
@@ -426,7 +426,7 @@ namespace Turtle.CompiledModels
             entityDateTimeValue.TypeMapping = SqliteDateTimeTypeMapping.Default;
             entityDateTimeValue.SetComparer(new ValueComparer<DateTime?>(
                 bool (DateTime? c1, DateTime? c2) => c1 == c2,
-                int (DateTime? c) => ((object)c).GetHashCode(),
+                int (DateTime? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 DateTime? (DateTime? c) => c));
 
             var entityDecimalValue = runtimeEntityType.AddProperty(
@@ -462,8 +462,10 @@ namespace Turtle.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             entityDecimalValue.TypeMapping = SqliteDecimalTypeMapping.Default;
-            entityDecimalValue.SetComparer(new NullableValueComparer<decimal>(entityDecimalValue.TypeMapping.Comparer));
-            entityDecimalValue.SetKeyComparer(new NullableValueComparer<decimal>(entityDecimalValue.TypeMapping.KeyComparer));
+            entityDecimalValue.SetComparer(new ValueComparer<decimal?>(
+                bool (decimal? c1, decimal? c2) => c1 == c2,
+                int (decimal? c) => (c == null ? 0 : ((object)c).GetHashCode()),
+                decimal? (decimal? c) => c));
 
             var entityDoubleValue = runtimeEntityType.AddProperty(
                 "EntityDoubleValue",

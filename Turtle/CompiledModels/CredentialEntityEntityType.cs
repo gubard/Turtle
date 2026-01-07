@@ -529,7 +529,7 @@ namespace Turtle.CompiledModels
             parentId.TypeMapping = SqliteGuidTypeMapping.Default;
             parentId.SetComparer(new ValueComparer<Guid?>(
                 bool (Guid? c1, Guid? c2) => c1 == c2,
-                int (Guid? c) => ((object)c).GetHashCode(),
+                int (Guid? c) => (c == null ? 0 : ((object)c).GetHashCode()),
                 Guid? (Guid? c) => c));
 
             var regex = runtimeEntityType.AddProperty(

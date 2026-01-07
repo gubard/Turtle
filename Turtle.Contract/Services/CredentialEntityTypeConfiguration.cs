@@ -27,7 +27,11 @@ public sealed class CredentialEntityTypeConfiguration : IEntityTypeConfiguration
         builder
             .Property(e => e.ParentId)
             .Metadata.SetValueComparer(
-                new ValueComparer<Guid?>((c1, c2) => c1 == c2, c => c.GetHashCode(), c => c)
+                new ValueComparer<Guid?>(
+                    (c1, c2) => c1 == c2,
+                    c => c == null ? 0 : c.GetHashCode(),
+                    c => c
+                )
             );
     }
 }
