@@ -1,9 +1,8 @@
 using System.Collections.Frozen;
-using Nestor.Db.Sqlite.Helpers;
+using Nestor.Db.Helpers;
 using Turtle.Contract.Helpers;
 using Turtle.Contract.Models;
 using Turtle.Contract.Services;
-using Turtle.Services;
 using Zeus.Helpers;
 
 var migration = new Dictionary<int, string>();
@@ -22,10 +21,9 @@ await WebApplication
     .CreateBuilder(args)
     .CreateAndRunZeusApp<
         ICredentialService,
-        EfCredentialService<TurtleDbContext>,
+        DbCredentialService,
         TurtleGetRequest,
         TurtlePostRequest,
         TurtleGetResponse,
-        TurtlePostResponse,
-        TurtleDbContext
+        TurtlePostResponse
     >(migration.ToFrozenDictionary(), "Turtle");

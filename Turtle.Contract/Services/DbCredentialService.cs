@@ -3,7 +3,8 @@ using System.Runtime.CompilerServices;
 using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
-using Microsoft.EntityFrameworkCore;
+using Nestor.Db.Helpers;
+using Nestor.Db.Models;
 using Nestor.Db.Services;
 using Turtle.Contract.Models;
 
@@ -16,23 +17,16 @@ public interface ICredentialService
 
 public interface IEfCredentialService
     : ICredentialService,
-        IEfService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
+        IDbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
-public sealed class EfCredentialService<TDbContext>
-    : EfService<
-        TurtleGetRequest,
-        TurtlePostRequest,
-        TurtleGetResponse,
-        TurtlePostResponse,
-        TDbContext
-    >,
+public sealed class DbCredentialService
+    : DbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
         IEfCredentialService
-    where TDbContext : NestorDbContext, ICredentialDbContext
 {
     private readonly GaiaValues _gaiaValues;
 
-    public EfCredentialService(TDbContext dbContext, GaiaValues gaiaValues)
-        : base(dbContext)
+    public DbCredentialService(IDbConnectionFactory factory, GaiaValues gaiaValues)
+        : base(factory)
     {
         _gaiaValues = gaiaValues;
     }
@@ -50,14 +44,13 @@ public sealed class EfCredentialService<TDbContext>
         CancellationToken ct
     )
     {
-        var credentials = await CreateQuery(request).ToArrayAsync(ct);
+        await using var session = await Factory.CreateSessionAsync(ct);
+        var credentials = await session.GetCredentialsAsync(CreateQuery(request), ct);
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
         {
-            response.Events = await DbContext
-                .Events.Where(x => x.Id > request.LastId)
-                .ToArrayAsync(ct);
+            response.Events = await GetLastEventsAsync(session, request.LastId, ct);
         }
 
         return response;
@@ -80,24 +73,21 @@ public sealed class EfCredentialService<TDbContext>
     {
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
-        await CreateAsync(idempotentId, request.CreateCredentials, ct);
+        await using var session = await Factory.CreateSessionAsync(ct);
+        await CreateAsync(session, idempotentId, request.CreateCredentials, ct);
         Edit(request.EditCredentials, editEntities);
-        ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
+        ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
 
-        await CredentialEntity.EditEntitiesAsync(
-            DbContext,
+        await session.EditEntitiesAsync(
             _gaiaValues.UserId.ToString(),
             idempotentId,
             editEntities.ToArray(),
             ct
         );
 
-        await DeleteAsync(idempotentId, request.DeleteIds, ct);
-        await DbContext.SaveChangesAsync(ct);
-
-        response.Events = await DbContext
-            .Events.Where(x => x.Id > request.LastLocalId)
-            .ToArrayAsync(ct);
+        await DeleteAsync(session, idempotentId, request.DeleteIds, ct);
+        await session.CommitAsync(ct);
+        response.Events = await GetLastEventsAsync(session, request.LastLocalId, ct);
 
         return response;
     }
@@ -106,32 +96,27 @@ public sealed class EfCredentialService<TDbContext>
     {
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
-        Create(idempotentId, request.CreateCredentials);
+        using var session = Factory.CreateSession();
+        Create(session, idempotentId, request.CreateCredentials);
         Edit(request.EditCredentials, editEntities);
-        ChangeOrder(request.ChangeOrders, response.ValidationErrors, editEntities);
-
-        CredentialEntity.EditEntities(
-            DbContext,
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            editEntities.ToArray()
-        );
-
-        Delete(idempotentId, request.DeleteIds);
-        DbContext.SaveChanges();
-        response.Events = DbContext.Events.Where(x => x.Id > request.LastLocalId).ToArray();
+        ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
+        session.EditEntities(_gaiaValues.UserId.ToString(), idempotentId, editEntities.ToArray());
+        Delete(session, idempotentId, request.DeleteIds);
+        session.Commit();
+        response.Events = GetLastEvents(session, request.LastLocalId);
 
         return response;
     }
 
     public override TurtleGetResponse Get(TurtleGetRequest request)
     {
-        var credentials = CreateQuery(request).ToArray();
+        using var session = Factory.CreateSession();
+        var credentials = session.GetCredentials(CreateQuery(request));
         var response = CreateResponse(request, credentials);
 
         if (request.LastId != -1)
         {
-            response.Events = DbContext.Events.Where(x => x.Id > request.LastId).ToArray();
+            response.Events = GetLastEvents(session, request.LastId);
         }
 
         return response;
@@ -226,33 +211,44 @@ public sealed class EfCredentialService<TDbContext>
         return response;
     }
 
-    private IQueryable<CredentialEntity> CreateQuery(TurtleGetRequest request)
+    private SqlQuery CreateQuery(TurtleGetRequest request)
     {
-        var childrenIds = request.GetChildrenIds.Select(x => (Guid?)x).ToFrozenSet();
-        var query = DbContext.Credentials.Where(x => x.Id == Guid.Empty);
+        var queries = new List<SqlQuery>();
 
         if (request.IsGetRoots)
         {
-            query = query.Concat(DbContext.Credentials.Where(x => x.ParentId == null));
+            queries.Add(
+                CredentialsExt.SelectQuery + $" WHERE {nameof(CredentialEntity.ParentId)} IS NULL"
+            );
         }
 
         if (request.GetChildrenIds.Length != 0)
         {
-            query = query.Concat(
-                DbContext.Credentials.Where(x => childrenIds.Contains(x.ParentId))
+            queries.Add(
+                new(
+                    CredentialsExt.SelectQuery
+                        + $" WHERE {nameof(CredentialEntity.ParentId)} IN ({request.GetChildrenIds.ToParameterNames(nameof(CredentialEntity.ParentId))})",
+                    request.GetChildrenIds.ToSqliteParameters(nameof(CredentialEntity.ParentId))
+                )
             );
         }
 
         if (request.GetParentsIds.Length != 0)
         {
             var sql = CreateSqlForAllChildren(request.GetParentsIds);
-            query = query.Concat(DbContext.Credentials.FromSqlRaw(sql));
+            queries.Add(sql);
         }
 
-        return query;
+        return new(
+            queries
+                .Select(x => x.Sql)
+                .JoinString($"{Environment.NewLine}UNION ALL{Environment.NewLine}"),
+            queries.SelectMany(x => x.Parameters).ToArray()
+        );
     }
 
     private ConfiguredValueTaskAwaitable DeleteAsync(
+        DbSession session,
         Guid idempotentId,
         Guid[] ids,
         CancellationToken ct
@@ -263,13 +259,7 @@ public sealed class EfCredentialService<TDbContext>
             return TaskHelper.ConfiguredCompletedTask;
         }
 
-        return CredentialEntity.DeleteEntitiesAsync(
-            DbContext,
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            ids,
-            ct
-        );
+        return session.DeleteEntitiesAsync(_gaiaValues.UserId.ToString(), idempotentId, ids, ct);
     }
 
     private void Edit(EditCredential[] edits, List<EditCredentialEntity> editEntities)
@@ -312,6 +302,7 @@ public sealed class EfCredentialService<TDbContext>
     }
 
     private ConfiguredValueTaskAwaitable CreateAsync(
+        DbSession session,
         Guid idempotentId,
         Credential[] creates,
         CancellationToken ct
@@ -345,8 +336,7 @@ public sealed class EfCredentialService<TDbContext>
             };
         }
 
-        return CredentialEntity.AddEntitiesAsync(
-            DbContext,
+        return session.AddEntitiesAsync(
             $"{_gaiaValues.UserId}",
             idempotentId,
             entities.ToArray(),
@@ -355,6 +345,7 @@ public sealed class EfCredentialService<TDbContext>
     }
 
     private void ChangeOrder(
+        DbSession session,
         CredentialChangeOrder[] changeOrders,
         List<ValidationError> errors,
         List<EditCredentialEntity> editEntities
@@ -365,20 +356,20 @@ public sealed class EfCredentialService<TDbContext>
             return;
         }
 
-        var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct().ToFrozenSet();
-        var insertItems = DbContext.Credentials.Where(x => insertIds.Contains(x.Id));
+        var insertIds = changeOrders.SelectMany(x => x.InsertIds).Distinct().ToArray();
+        var insertItems = session.GetCredentials(insertIds);
         var insertItemsDictionary = insertItems.ToDictionary(x => x.Id).ToFrozenDictionary();
-        var startIds = changeOrders.Select(x => x.StartId).Distinct().ToFrozenSet();
-        var startItems = DbContext.Credentials.Where(x => startIds.Contains(x.Id));
+        var startIds = changeOrders.Select(x => x.StartId).Distinct().ToArray();
+        var startItems = session.GetCredentials(startIds);
         var startItemsDictionary = startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
-        var parentItems = startItems.Select(x => x.ParentId).Distinct().ToFrozenSet();
-        var siblings = DbContext.Credentials.Where(x => parentItems.Contains(x.Id)).ToArray();
+        var parentItems = startItems.Select(x => x.ParentId).WhereNotNull().Distinct().ToArray();
+        var siblings = session.GetCredentials(parentItems);
 
         for (var index = 0; index < changeOrders.Length; index++)
         {
             var changeOrder = changeOrders[index];
 
-            var inserts = changeOrder.InsertIds.Select(x => insertItemsDictionary[x]).ToFrozenSet();
+            var inserts = changeOrder.InsertIds.Select(x => insertItemsDictionary[x]).ToArray();
 
             if (!startItemsDictionary.TryGetValue(changeOrder.StartId, out var item))
             {
@@ -413,22 +404,17 @@ public sealed class EfCredentialService<TDbContext>
         }
     }
 
-    private void Delete(Guid idempotentId, Guid[] ids)
+    private void Delete(DbSession session, Guid idempotentId, Guid[] ids)
     {
         if (ids.Length == 0)
         {
             return;
         }
 
-        CredentialEntity.DeleteEntities(
-            DbContext,
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            ids
-        );
+        session.DeleteEntities(_gaiaValues.UserId.ToString(), idempotentId, ids);
     }
 
-    private void Create(Guid idempotentId, Credential[] creates)
+    private void Create(DbSession session, Guid idempotentId, Credential[] creates)
     {
         if (creates.Length == 0)
         {
@@ -458,19 +444,13 @@ public sealed class EfCredentialService<TDbContext>
             };
         }
 
-        CredentialEntity.AddEntities(
-            DbContext,
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            entities.ToArray()
-        );
+        session.AddEntities(_gaiaValues.UserId.ToString(), idempotentId, entities.ToArray());
     }
 
-    private string CreateSqlForAllChildren(Guid[] ids)
+    private SqlQuery CreateSqlForAllChildren(Guid[] ids)
     {
-        var idsString = ids.Select(i => i.ToString().ToUpperInvariant()).JoinString("', '");
-
-        return $$"""
+        return new(
+            $$"""
             WITH RECURSIVE hierarchy(
                      Id,
                      Name,
@@ -503,7 +483,7 @@ public sealed class EfCredentialService<TDbContext>
                      OrderIndex,
                      ParentId
                      FROM ToDoItem
-                     WHERE Id IN ('{{idsString}}')
+                     WHERE Id IN ({{ids.ToParameterNames("Id")}})
 
                      UNION ALL
 
@@ -525,7 +505,9 @@ public sealed class EfCredentialService<TDbContext>
                      FROM ToDoItem t
                      INNER JOIN hierarchy h ON t.ParentId = h.Id
                  )
-                 SELECT * FROM hierarchy;
-            """;
+                 SELECT * FROM hierarchy
+            """,
+            ids.ToSqliteParameters("Id")
+        );
     }
 }
