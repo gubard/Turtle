@@ -86,8 +86,8 @@ public sealed class DbCredentialService
         );
 
         await DeleteAsync(session, idempotentId, request.DeleteIds, ct);
-        await session.CommitAsync(ct);
         response.Events = await GetLastEventsAsync(session, request.LastLocalId, ct);
+        await session.CommitAsync(ct);
 
         return response;
     }
@@ -102,8 +102,8 @@ public sealed class DbCredentialService
         ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
         session.EditEntities(_gaiaValues.UserId.ToString(), idempotentId, editEntities.ToArray());
         Delete(session, idempotentId, request.DeleteIds);
-        session.Commit();
         response.Events = GetLastEvents(session, request.LastLocalId);
+        session.Commit();
 
         return response;
     }
