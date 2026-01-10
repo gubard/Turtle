@@ -53,7 +53,8 @@ public sealed class DbCredentialService
     )
     {
         await using var session = await Factory.CreateSessionAsync(ct);
-        var credentials = await session.GetCredentialsAsync(CreateQuery(request), ct);
+        var query = CreateQuery(request);
+        var credentials = await session.GetCredentialsAsync(query, ct);
         var response = CreateResponse(request, credentials);
 
         return response;
@@ -221,6 +222,12 @@ public sealed class DbCredentialService
     {
         var queries = new List<SqlQuery>();
 
+        if (request.GetParentsIds.Length != 0)
+        {
+            var sql = CreateSqlForAllChildren(request.GetParentsIds);
+            queries.Add(sql);
+        }
+
         if (request.IsGetRoots)
         {
             queries.Add(
@@ -239,18 +246,14 @@ public sealed class DbCredentialService
             );
         }
 
-        if (request.GetParentsIds.Length != 0)
-        {
-            var sql = CreateSqlForAllChildren(request.GetParentsIds);
-            queries.Add(sql);
-        }
-
-        return new(
+        var result = new SqlQuery(
             queries
                 .Select(x => x.Sql)
                 .JoinString($"{Environment.NewLine}UNION ALL{Environment.NewLine}"),
             queries.SelectMany(x => x.Parameters).ToArray()
         );
+
+        return result;
     }
 
     private ConfiguredValueTaskAwaitable DeleteAsync(
@@ -512,7 +515,7 @@ public sealed class DbCredentialService
                      Type,
                      OrderIndex,
                      ParentId
-                     FROM ToDoItem
+                     FROM Credentials
                      WHERE Id IN ({{ids.ToParameterNames("Id")}})
 
                      UNION ALL
@@ -532,7 +535,7 @@ public sealed class DbCredentialService
                      t.Type,
                      t.OrderIndex,
                      t.ParentId
-                     FROM ToDoItem t
+                     FROM Credentials t
                      INNER JOIN hierarchy h ON t.ParentId = h.Id
                  )
                  SELECT * FROM hierarchy
