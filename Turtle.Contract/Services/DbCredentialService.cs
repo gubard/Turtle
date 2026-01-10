@@ -10,7 +10,9 @@ using Turtle.Contract.Models;
 
 namespace Turtle.Contract.Services;
 
-public interface IHttpCredentialService : ICredentialService;
+public interface IHttpCredentialService
+    : ICredentialService,
+        IHttpService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
 public interface ICredentialService
     : IService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
@@ -24,11 +26,17 @@ public sealed class DbCredentialService
         IEfCredentialService
 {
     private readonly GaiaValues _gaiaValues;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
 
-    public DbCredentialService(IDbConnectionFactory factory, GaiaValues gaiaValues)
+    public DbCredentialService(
+        IDbConnectionFactory factory,
+        GaiaValues gaiaValues,
+        IFactory<DbServiceOptions> factoryOptions
+    )
         : base(factory)
     {
         _gaiaValues = gaiaValues;
+        _factoryOptions = factoryOptions;
     }
 
     public override ConfiguredValueTaskAwaitable<TurtleGetResponse> GetAsync(
@@ -47,11 +55,6 @@ public sealed class DbCredentialService
         await using var session = await Factory.CreateSessionAsync(ct);
         var credentials = await session.GetCredentialsAsync(CreateQuery(request), ct);
         var response = CreateResponse(request, credentials);
-
-        if (request.LastId != -1)
-        {
-            response.Events = await GetLastEventsAsync(session, request.LastId, ct);
-        }
 
         return response;
     }
@@ -74,19 +77,20 @@ public sealed class DbCredentialService
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
         await using var session = await Factory.CreateSessionAsync(ct);
-        await CreateAsync(session, idempotentId, request.CreateCredentials, ct);
+        var options = _factoryOptions.Create();
+        await CreateAsync(session, options, idempotentId, request.CreateCredentials, ct);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
 
         await session.EditEntitiesAsync(
             _gaiaValues.UserId.ToString(),
             idempotentId,
+            options.IsUseEvents,
             editEntities.ToArray(),
             ct
         );
 
-        await DeleteAsync(session, idempotentId, request.DeleteIds, ct);
-        response.Events = await GetLastEventsAsync(session, request.LastLocalId, ct);
+        await DeleteAsync(session, options, idempotentId, request.DeleteIds, ct);
         await session.CommitAsync(ct);
 
         return response;
@@ -97,12 +101,19 @@ public sealed class DbCredentialService
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
         using var session = Factory.CreateSession();
-        Create(session, idempotentId, request.CreateCredentials);
+        var options = _factoryOptions.Create();
+        Create(session, options, idempotentId, request.CreateCredentials);
         Edit(request.EditCredentials, editEntities);
         ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
-        session.EditEntities(_gaiaValues.UserId.ToString(), idempotentId, editEntities.ToArray());
-        Delete(session, idempotentId, request.DeleteIds);
-        response.Events = GetLastEvents(session, request.LastLocalId);
+
+        session.EditEntities(
+            _gaiaValues.UserId.ToString(),
+            idempotentId,
+            options.IsUseEvents,
+            editEntities.ToArray()
+        );
+
+        Delete(session, options, idempotentId, request.DeleteIds);
         session.Commit();
 
         return response;
@@ -113,11 +124,6 @@ public sealed class DbCredentialService
         using var session = Factory.CreateSession();
         var credentials = session.GetCredentials(CreateQuery(request));
         var response = CreateResponse(request, credentials);
-
-        if (request.LastId != -1)
-        {
-            response.Events = GetLastEvents(session, request.LastId);
-        }
 
         return response;
     }
@@ -249,6 +255,7 @@ public sealed class DbCredentialService
 
     private ConfiguredValueTaskAwaitable DeleteAsync(
         DbSession session,
+        DbServiceOptions options,
         Guid idempotentId,
         Guid[] ids,
         CancellationToken ct
@@ -259,7 +266,13 @@ public sealed class DbCredentialService
             return TaskHelper.ConfiguredCompletedTask;
         }
 
-        return session.DeleteEntitiesAsync(_gaiaValues.UserId.ToString(), idempotentId, ids, ct);
+        return session.DeleteEntitiesAsync(
+            _gaiaValues.UserId.ToString(),
+            idempotentId,
+            options.IsUseEvents,
+            ids,
+            ct
+        );
     }
 
     private void Edit(EditCredential[] edits, List<EditCredentialEntity> editEntities)
@@ -303,6 +316,7 @@ public sealed class DbCredentialService
 
     private ConfiguredValueTaskAwaitable CreateAsync(
         DbSession session,
+        DbServiceOptions options,
         Guid idempotentId,
         Credential[] creates,
         CancellationToken ct
@@ -339,6 +353,7 @@ public sealed class DbCredentialService
         return session.AddEntitiesAsync(
             $"{_gaiaValues.UserId}",
             idempotentId,
+            options.IsUseEvents,
             entities.ToArray(),
             ct
         );
@@ -404,17 +419,27 @@ public sealed class DbCredentialService
         }
     }
 
-    private void Delete(DbSession session, Guid idempotentId, Guid[] ids)
+    private void Delete(DbSession session, DbServiceOptions options, Guid idempotentId, Guid[] ids)
     {
         if (ids.Length == 0)
         {
             return;
         }
 
-        session.DeleteEntities(_gaiaValues.UserId.ToString(), idempotentId, ids);
+        session.DeleteEntities(
+            _gaiaValues.UserId.ToString(),
+            idempotentId,
+            options.IsUseEvents,
+            ids
+        );
     }
 
-    private void Create(DbSession session, Guid idempotentId, Credential[] creates)
+    private void Create(
+        DbSession session,
+        DbServiceOptions options,
+        Guid idempotentId,
+        Credential[] creates
+    )
     {
         if (creates.Length == 0)
         {
@@ -444,7 +469,12 @@ public sealed class DbCredentialService
             };
         }
 
-        session.AddEntities(_gaiaValues.UserId.ToString(), idempotentId, entities.ToArray());
+        session.AddEntities(
+            _gaiaValues.UserId.ToString(),
+            idempotentId,
+            options.IsUseEvents,
+            entities.ToArray()
+        );
     }
 
     private SqlQuery CreateSqlForAllChildren(Guid[] ids)
