@@ -1,4 +1,4 @@
-﻿using Gaia.Services;
+﻿using Nestor.Db.Models;
 
 namespace Turtle.Contract.Models;
 
@@ -9,4 +9,5 @@ public class TurtlePostRequest : IPostRequest
     public Credential[] CreateCredentials { get; set; } = [];
     public EditCredential[] EditCredentials { get; set; } = [];
     public CredentialChangeOrder[] ChangeOrders { get; set; } = [];
+    public EventEntity[] Events { get; set; } = [];
 }

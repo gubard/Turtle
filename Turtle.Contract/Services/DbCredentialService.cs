@@ -59,7 +59,7 @@ public sealed class DbCredentialService
         return response;
     }
 
-    public override ConfiguredValueTaskAwaitable<TurtlePostResponse> PostAsync(
+    protected override ConfiguredValueTaskAwaitable<TurtlePostResponse> ExecuteAsync(
         Guid idempotentId,
         TurtlePostRequest request,
         CancellationToken ct
@@ -96,7 +96,7 @@ public sealed class DbCredentialService
         return response;
     }
 
-    public override TurtlePostResponse Post(Guid idempotentId, TurtlePostRequest request)
+    protected override TurtlePostResponse Execute(Guid idempotentId, TurtlePostRequest request)
     {
         var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
