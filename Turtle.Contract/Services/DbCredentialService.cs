@@ -66,20 +66,21 @@ public sealed class DbCredentialService
 
     protected override ConfiguredValueTaskAwaitable<TurtlePostResponse> ExecuteAsync(
         Guid idempotentId,
+        TurtlePostResponse response,
         TurtlePostRequest request,
         CancellationToken ct
     )
     {
-        return PostCore(idempotentId, request, ct).ConfigureAwait(false);
+        return PostCore(idempotentId, response, request, ct).ConfigureAwait(false);
     }
 
     private async ValueTask<TurtlePostResponse> PostCore(
         Guid idempotentId,
+        TurtlePostResponse response,
         TurtlePostRequest request,
         CancellationToken ct
     )
     {
-        var response = new TurtlePostResponse();
         var editEntities = new List<EditCredentialEntity>();
         await using var session = await Factory.CreateSessionAsync(ct);
         var options = _factoryOptions.Create();
@@ -465,7 +466,7 @@ public sealed class DbCredentialService
 
     private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
     {
-        await ExecuteAsync(Guid.NewGuid(), source, ct);
+        await ExecuteAsync(Guid.NewGuid(), new(), source, ct);
     }
 
     public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
@@ -477,20 +478,11 @@ public sealed class DbCredentialService
     {
         await using var session = await Factory.CreateSessionAsync(ct);
         var entities = GetCredentialEntities(source);
-        var ids = entities.Select(x => x.Id).ToArray();
 
         if (entities.Length == 0)
         {
             return;
         }
-
-        var deleteIds = await session.GetGuidAsync(
-            new(
-                CredentialsExt.SelectIdsQuery + $" WHERE Id NOT IN ({ids.ToParameterNames("Id")})",
-                ids.ToSqliteParameters("Id")
-            ),
-            ct
-        );
 
         var exists = await session.IsExistsAsync(entities, ct);
 
@@ -509,11 +501,6 @@ public sealed class DbCredentialService
         foreach (var query in updateQueries)
         {
             await session.ExecuteNonQueryAsync(query, ct);
-        }
-
-        if (deleteIds.Length != 0)
-        {
-            await session.ExecuteNonQueryAsync(deleteIds.CreateDeleteCredentialsQuery(), ct);
         }
 
         await session.CommitAsync(ct);
