@@ -101,38 +101,6 @@ public sealed class DbCredentialService
         return response;
     }
 
-    protected override TurtlePostResponse Execute(Guid idempotentId, TurtlePostRequest request)
-    {
-        var response = new TurtlePostResponse();
-        var editEntities = new List<EditCredentialEntity>();
-        using var session = Factory.CreateSession();
-        var options = _factoryOptions.Create();
-        Create(session, options, idempotentId, request.CreateCredentials);
-        Edit(request.EditCredentials, editEntities);
-        ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
-
-        session.EditEntities(
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            editEntities.ToArray()
-        );
-
-        Delete(session, options, idempotentId, request.DeleteIds);
-        session.Commit();
-
-        return response;
-    }
-
-    public override TurtleGetResponse Get(TurtleGetRequest request)
-    {
-        using var session = Factory.CreateSession();
-        var credentials = session.GetCredentials(CreateQuery(request));
-        var response = CreateResponse(request, credentials);
-
-        return response;
-    }
-
     private void AddParents(
         TurtleGetResponse response,
         Guid rootId,
@@ -426,64 +394,6 @@ public sealed class DbCredentialService
         }
     }
 
-    private void Delete(DbSession session, DbServiceOptions options, Guid idempotentId, Guid[] ids)
-    {
-        if (ids.Length == 0)
-        {
-            return;
-        }
-
-        session.DeleteEntities(
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            ids
-        );
-    }
-
-    private void Create(
-        DbSession session,
-        DbServiceOptions options,
-        Guid idempotentId,
-        Credential[] creates
-    )
-    {
-        if (creates.Length == 0)
-        {
-            return;
-        }
-
-        var entities = new Span<CredentialEntity>(new CredentialEntity[creates.Length]);
-
-        for (var index = 0; index < creates.Length; index++)
-        {
-            var createCredential = creates[index];
-            entities[index] = new()
-            {
-                CustomAvailableCharacters = createCredential.CustomAvailableCharacters,
-                IsAvailableLowerLatin = createCredential.IsAvailableLowerLatin,
-                Id = createCredential.Id,
-                IsAvailableNumber = createCredential.IsAvailableNumber,
-                IsAvailableSpecialSymbols = createCredential.IsAvailableSpecialSymbols,
-                IsAvailableUpperLatin = createCredential.IsAvailableUpperLatin,
-                Key = createCredential.Key,
-                Length = createCredential.Length,
-                Login = createCredential.Login,
-                Name = createCredential.Name,
-                Regex = createCredential.Regex,
-                Type = createCredential.Type,
-                ParentId = createCredential.ParentId,
-            };
-        }
-
-        session.AddEntities(
-            _gaiaValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            entities.ToArray()
-        );
-    }
-
     private SqlQuery CreateSqlForAllChildren(Guid[] ids)
     {
         return new(
@@ -558,11 +468,6 @@ public sealed class DbCredentialService
         await ExecuteAsync(Guid.NewGuid(), source, ct);
     }
 
-    public void Update(TurtlePostRequest source)
-    {
-        Execute(Guid.NewGuid(), source);
-    }
-
     public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
     {
         return UpdateCore(source, ct).ConfigureAwait(false);
@@ -572,11 +477,20 @@ public sealed class DbCredentialService
     {
         await using var session = await Factory.CreateSessionAsync(ct);
         var entities = GetCredentialEntities(source);
+        var ids = entities.Select(x => x.Id).ToArray();
 
         if (entities.Length == 0)
         {
             return;
         }
+
+        var deleteIds = await session.GetGuidAsync(
+            new(
+                CredentialsExt.SelectIdsQuery + $" WHERE Id NOT IN ({ids.ToParameterNames("Id")})",
+                ids.ToSqliteParameters("Id")
+            ),
+            ct
+        );
 
         var exists = await session.IsExistsAsync(entities, ct);
 
@@ -597,39 +511,12 @@ public sealed class DbCredentialService
             await session.ExecuteNonQueryAsync(query, ct);
         }
 
+        if (deleteIds.Length != 0)
+        {
+            await session.ExecuteNonQueryAsync(deleteIds.CreateDeleteCredentialsQuery(), ct);
+        }
+
         await session.CommitAsync(ct);
-    }
-
-    public void Update(TurtleGetResponse source)
-    {
-        using var session = Factory.CreateSession();
-        var entities = GetCredentialEntities(source);
-
-        if (entities.Length == 0)
-        {
-            return;
-        }
-
-        var exists = session.IsExists(entities);
-
-        var updateQueries = entities
-            .Where(x => exists.Contains(x.Id))
-            .Select(x => x.CreateUpdateCredentialsQuery())
-            .ToArray();
-
-        var inserts = entities.Where(x => !exists.Contains(x.Id)).ToArray();
-
-        if (inserts.Length != 0)
-        {
-            session.ExecuteNonQuery(inserts.CreateInsertQuery());
-        }
-
-        foreach (var query in updateQueries)
-        {
-            session.ExecuteNonQuery(query);
-        }
-
-        session.Commit();
     }
 
     private static CredentialEntity[] GetCredentialEntities(TurtleGetResponse source)
