@@ -5,6 +5,11 @@ using Turtle.Contract.Models;
 using Turtle.Contract.Services;
 using Zeus.Helpers;
 
+InsertHelper.AddDefaultInsert(
+    nameof(CredentialEntity),
+    id => new CredentialEntity[] { new() { Id = id } }.CreateInsertQuery()
+);
+
 var migration = new Dictionary<int, string>();
 
 foreach (var (key, value) in SqliteMigration.Migrations)
