@@ -6,6 +6,7 @@ using Gaia.Services;
 using Nestor.Db.Helpers;
 using Nestor.Db.Models;
 using Nestor.Db.Services;
+using Turtle.Contract.Helpers;
 using Turtle.Contract.Models;
 
 namespace Turtle.Contract.Services;
@@ -17,13 +18,16 @@ public interface IHttpCredentialService
 public interface ICredentialService
     : IService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
+public interface ICredentialDbCache : IDbCache<TurtlePostRequest, TurtleGetResponse>;
+
 public interface IEfCredentialService
     : ICredentialService,
         IDbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
 public sealed class DbCredentialService
     : DbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
-        IEfCredentialService
+        IEfCredentialService,
+        ICredentialDbCache
 {
     private readonly GaiaValues _gaiaValues;
     private readonly IFactory<DbServiceOptions> _factoryOptions;
@@ -542,5 +546,102 @@ public sealed class DbCredentialService
             """,
             ids.ToSqliteParameters("Id")
         );
+    }
+
+    public ConfiguredValueTaskAwaitable UpdateAsync(TurtlePostRequest source, CancellationToken ct)
+    {
+        return UpdateCore(source, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
+    {
+        await ExecuteAsync(Guid.NewGuid(), source, ct);
+    }
+
+    public void Update(TurtlePostRequest source)
+    {
+        Execute(Guid.NewGuid(), source);
+    }
+
+    public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
+    {
+        return UpdateCore(source, ct).ConfigureAwait(false);
+    }
+
+    public async ValueTask UpdateCore(TurtleGetResponse source, CancellationToken ct)
+    {
+        await using var session = await Factory.CreateSessionAsync(ct);
+        var entities = GetCredentialEntities(source);
+
+        if (entities.Length == 0)
+        {
+            return;
+        }
+
+        var exists = await session.IsExistsAsync(entities, ct);
+
+        var updateQueries = entities
+            .Where(x => exists.Contains(x.Id))
+            .Select(x => x.CreateUpdateCredentialsQuery())
+            .ToArray();
+
+        var inserts = entities.Where(x => !exists.Contains(x.Id)).ToArray();
+
+        if (inserts.Length != 0)
+        {
+            await session.ExecuteNonQueryAsync(inserts.CreateInsertQuery(), ct);
+        }
+
+        foreach (var query in updateQueries)
+        {
+            await session.ExecuteNonQueryAsync(query, ct);
+        }
+
+        await session.CommitAsync(ct);
+    }
+
+    public void Update(TurtleGetResponse source)
+    {
+        using var session = Factory.CreateSession();
+        var entities = GetCredentialEntities(source);
+
+        if (entities.Length == 0)
+        {
+            return;
+        }
+
+        var exists = session.IsExists(entities);
+
+        var updateQueries = entities
+            .Where(x => exists.Contains(x.Id))
+            .Select(x => x.CreateUpdateCredentialsQuery())
+            .ToArray();
+
+        var inserts = entities.Where(x => !exists.Contains(x.Id)).ToArray();
+
+        if (inserts.Length != 0)
+        {
+            session.ExecuteNonQuery(inserts.CreateInsertQuery());
+        }
+
+        foreach (var query in updateQueries)
+        {
+            session.ExecuteNonQuery(query);
+        }
+
+        session.Commit();
+    }
+
+    private static CredentialEntity[] GetCredentialEntities(TurtleGetResponse source)
+    {
+        return source
+            .Children.SelectMany(x => x.Value)
+            .Select(x => x.ToCredentialEntity())
+            .Concat(source.Parents.SelectMany(x => x.Value).Select(x => x.ToCredentialEntity()))
+            .Concat(
+                source.Roots?.Select(x => x.ToCredentialEntity())
+                    ?? Enumerable.Empty<CredentialEntity>()
+            )
+            .ToArray();
     }
 }
