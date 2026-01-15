@@ -37,7 +37,7 @@ public sealed class DbCredentialService
         GaiaValues gaiaValues,
         IFactory<DbServiceOptions> factoryOptions
     )
-        : base(factory)
+        : base(factory, nameof(CredentialEntity))
     {
         _gaiaValues = gaiaValues;
         _factoryOptions = factoryOptions;
