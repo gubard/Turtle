@@ -353,7 +353,12 @@ public sealed class DbCredentialService
         var startIds = changeOrders.Select(x => x.StartId).Distinct().ToArray();
         var startItems = session.GetCredentials(startIds);
         var startItemsDictionary = startItems.ToDictionary(x => x.Id).ToFrozenDictionary();
-        var parentItems = startItems.Select(x => x.ParentId).WhereNotNull().Distinct().ToArray();
+
+        var parentItems = startItems
+            .Select(x => x.ParentId)
+            .WhereNotNullStruct()
+            .Distinct()
+            .ToArray();
         var siblings = session.GetCredentials(parentItems);
 
         for (var index = 0; index < changeOrders.Length; index++)
