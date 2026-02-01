@@ -26,7 +26,7 @@ await WebApplication
     .CreateBuilder(args)
     .CreateAndRunZeusApp<
         ICredentialService,
-        DbCredentialService,
+        CredentialDbService,
         TurtleGetRequest,
         TurtlePostRequest,
         TurtleGetResponse,

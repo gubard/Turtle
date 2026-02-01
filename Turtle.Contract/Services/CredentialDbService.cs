@@ -11,7 +11,7 @@ using Turtle.Contract.Models;
 
 namespace Turtle.Contract.Services;
 
-public interface IHttpCredentialService
+public interface ICredentialHttpService
     : ICredentialService,
         IHttpService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
@@ -20,19 +20,19 @@ public interface ICredentialService
 
 public interface ICredentialDbCache : IDbCache<TurtlePostRequest, TurtleGetResponse>;
 
-public interface IEfCredentialService
+public interface ICredentialDbService
     : ICredentialService,
         IDbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
 
-public sealed class DbCredentialService
+public sealed class CredentialDbService
     : DbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
-        IEfCredentialService,
+        ICredentialDbService,
         ICredentialDbCache
 {
     private readonly GaiaValues _gaiaValues;
     private readonly IFactory<DbServiceOptions> _factoryOptions;
 
-    public DbCredentialService(
+    public CredentialDbService(
         IDbConnectionFactory factory,
         GaiaValues gaiaValues,
         IFactory<DbServiceOptions> factoryOptions
