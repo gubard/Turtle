@@ -71,10 +71,10 @@ public sealed class CredentialDbService
         CancellationToken ct
     )
     {
-        return PostCore(idempotentId, response, request, ct).ConfigureAwait(false);
+        return ExecuteCore(idempotentId, response, request, ct).ConfigureAwait(false);
     }
 
-    private async ValueTask<TurtlePostResponse> PostCore(
+    private async ValueTask<TurtlePostResponse> ExecuteCore(
         Guid idempotentId,
         TurtlePostResponse response,
         TurtlePostRequest request,
