@@ -85,7 +85,7 @@ public sealed class CredentialDbService
         await using var session = await Factory.CreateSessionAsync(ct);
         var options = _factoryOptions.Create();
         await CreateAsync(session, options, idempotentId, request.CreateCredentials, ct);
-        Edit(request.EditCredentials, editEntities);
+        Edit(request.Edits, editEntities);
         ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
 
         await session.EditEntitiesAsync(
@@ -337,7 +337,7 @@ public sealed class CredentialDbService
 
     private void ChangeOrder(
         DbSession session,
-        CredentialChangeOrder[] changeOrders,
+        ChangeOrder[] changeOrders,
         List<ValidationError> errors,
         List<EditCredentialEntity> editEntities
     )

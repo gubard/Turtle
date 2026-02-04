@@ -1,6 +1,8 @@
-﻿namespace Turtle.Contract.Models;
+﻿using Gaia.Models;
 
-public class EditCredential
+namespace Turtle.Contract.Models;
+
+public sealed class EditCredential : IEdit
 {
     public Guid[] Ids { get; set; } = [];
     public bool IsEditName { get; set; }

@@ -1,13 +1,14 @@
-﻿using Nestor.Db.Models;
+﻿using Gaia.Models;
+using Nestor.Db.Models;
 
 namespace Turtle.Contract.Models;
 
-public class TurtlePostRequest : IPostRequest
+public sealed class TurtlePostRequest : IPostRequest, IDragChangeOrder<EditCredential>
 {
     public long LastLocalId { get; set; }
     public Guid[] DeleteIds { get; set; } = [];
     public Credential[] CreateCredentials { get; set; } = [];
-    public EditCredential[] EditCredentials { get; set; } = [];
-    public CredentialChangeOrder[] ChangeOrders { get; set; } = [];
+    public ChangeOrder[] ChangeOrders { get; set; } = [];
+    public EditCredential[] Edits { get; set; } = [];
     public EventEntity[] Events { get; set; } = [];
 }

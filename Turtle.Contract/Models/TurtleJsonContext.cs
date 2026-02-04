@@ -8,7 +8,7 @@ namespace Turtle.Contract.Models;
 [JsonSerializable(typeof(TurtlePostRequest))]
 [JsonSerializable(typeof(TurtleGetResponse))]
 [JsonSerializable(typeof(TurtlePostResponse))]
-[JsonSerializable(typeof(CredentialChangeOrder))]
+[JsonSerializable(typeof(ChangeOrder))]
 [JsonSerializable(typeof(CreateCredential))]
 [JsonSerializable(typeof(Credential))]
 [JsonSerializable(typeof(CredentialType))]
