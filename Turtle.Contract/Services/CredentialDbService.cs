@@ -57,7 +57,7 @@ public sealed class CredentialDbService
     )
     {
         await using var session = await Factory.CreateSessionAsync(ct);
-        var query = CreateQuery(request);
+        var query = CreateQuery(request, session);
         var credentials = await session.GetCredentialsAsync(query, ct);
         var response = CreateResponse(request, credentials);
 
@@ -191,13 +191,13 @@ public sealed class CredentialDbService
         return response;
     }
 
-    private SqlQuery CreateQuery(TurtleGetRequest request)
+    private SqlQuery CreateQuery(TurtleGetRequest request, DbSession session)
     {
         var queries = new List<SqlQuery>();
 
         if (request.GetParentsIds.Length != 0)
         {
-            var sql = CreateSqlForAllChildren(request.GetParentsIds);
+            var sql = CreateSqlForAllChildren(request.GetParentsIds, session);
             queries.Add(sql);
         }
 
@@ -214,7 +214,10 @@ public sealed class CredentialDbService
                 new(
                     CredentialsExt.SelectQuery
                         + $" WHERE {nameof(CredentialEntity.ParentId)} IN ({request.GetChildrenIds.ToParameterNames(nameof(CredentialEntity.ParentId))})",
-                    request.GetChildrenIds.ToSqliteParameters(nameof(CredentialEntity.ParentId))
+                    session.ToDbParameters(
+                        request.GetChildrenIds,
+                        nameof(CredentialEntity.ParentId)
+                    )
                 )
             );
         }
@@ -400,7 +403,7 @@ public sealed class CredentialDbService
         }
     }
 
-    private SqlQuery CreateSqlForAllChildren(Guid[] ids)
+    private SqlQuery CreateSqlForAllChildren(Guid[] ids, DbSession session)
     {
         return new(
             $$"""
@@ -460,7 +463,7 @@ public sealed class CredentialDbService
                  )
                  SELECT * FROM hierarchy
             """,
-            ids.ToSqliteParameters("Id")
+            session.ToDbParameters(ids, "Id")
         );
     }
 
@@ -493,14 +496,14 @@ public sealed class CredentialDbService
 
         var updateQueries = entities
             .Where(x => exists.Contains(x.Id))
-            .Select(x => x.CreateUpdateCredentialsQuery())
+            .Select(x => x.CreateUpdateCredentialsQuery(session))
             .ToArray();
 
         var inserts = entities.Where(x => !exists.Contains(x.Id)).ToArray();
 
         if (inserts.Length != 0)
         {
-            await session.ExecuteNonQueryAsync(inserts.CreateInsertQuery(), ct);
+            await session.ExecuteNonQueryAsync(inserts.CreateInsertQuery(session), ct);
         }
 
         foreach (var query in updateQueries)
