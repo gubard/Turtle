@@ -29,17 +29,17 @@ public sealed class CredentialDbService
         ICredentialDbService,
         ICredentialDbCache
 {
-    private readonly GaiaValues _gaiaValues;
+    private readonly DbValues _dbValues;
     private readonly IFactory<DbServiceOptions> _factoryOptions;
 
     public CredentialDbService(
         IDbConnectionFactory factory,
-        GaiaValues gaiaValues,
+        DbValues dbValues,
         IFactory<DbServiceOptions> factoryOptions
     )
         : base(factory, nameof(CredentialEntity))
     {
-        _gaiaValues = gaiaValues;
+        _dbValues = dbValues;
         _factoryOptions = factoryOptions;
     }
 
@@ -89,7 +89,7 @@ public sealed class CredentialDbService
         ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
 
         await session.EditEntitiesAsync(
-            _gaiaValues.UserId.ToString(),
+            _dbValues.UserId.ToString(),
             idempotentId,
             options.IsUseEvents,
             editEntities.ToArray(),
@@ -246,7 +246,7 @@ public sealed class CredentialDbService
         }
 
         return session.DeleteEntitiesAsync(
-            _gaiaValues.UserId.ToString(),
+            _dbValues.UserId.ToString(),
             idempotentId,
             options.IsUseEvents,
             ids,
@@ -330,7 +330,7 @@ public sealed class CredentialDbService
         }
 
         return session.AddEntitiesAsync(
-            $"{_gaiaValues.UserId}",
+            $"{_dbValues.UserId}",
             idempotentId,
             options.IsUseEvents,
             entities.ToArray(),
