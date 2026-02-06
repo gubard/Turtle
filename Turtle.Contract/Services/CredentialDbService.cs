@@ -110,7 +110,7 @@ public sealed class CredentialDbService
         FrozenDictionary<Guid, CredentialEntity> credentials
     )
     {
-        var credential = ToCredential(credentials[rootId]);
+        var credential = credentials[rootId].ToCredential();
         response.Parents.Add(rootId, [credential]);
 
         if (credential.ParentId is null)
@@ -128,7 +128,7 @@ public sealed class CredentialDbService
         FrozenDictionary<Guid, CredentialEntity> credentials
     )
     {
-        var credential = ToCredential(credentials[parentId]);
+        var credential = credentials[parentId].ToCredential();
         response.Parents[rootId].Add(credential);
 
         if (credential.ParentId is null)
@@ -137,27 +137,6 @@ public sealed class CredentialDbService
         }
 
         AddParents(response, rootId, credential.ParentId.Value, credentials);
-    }
-
-    private static Credential ToCredential(CredentialEntity entity)
-    {
-        return new()
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            CustomAvailableCharacters = entity.CustomAvailableCharacters,
-            IsAvailableLowerLatin = entity.IsAvailableLowerLatin,
-            IsAvailableNumber = entity.IsAvailableNumber,
-            IsAvailableSpecialSymbols = entity.IsAvailableSpecialSymbols,
-            IsAvailableUpperLatin = entity.IsAvailableUpperLatin,
-            Key = entity.Key,
-            Length = entity.Length,
-            Regex = entity.Regex,
-            Type = entity.Type,
-            Login = entity.Login,
-            OrderIndex = entity.OrderIndex,
-            ParentId = entity.ParentId,
-        };
     }
 
     private TurtleGetResponse CreateResponse(
@@ -169,12 +148,20 @@ public sealed class CredentialDbService
         var dictionary = credentials.ToDictionary(x => x.Id).ToFrozenDictionary();
         var roots = dictionary.Values.Where(x => x.ParentId is null).ToArray();
 
+        if (request.IsGetBookmarks)
+        {
+            response.Bookmarks = dictionary
+                .Values.Where(x => x.IsBookmark)
+                .Select(x => x.ToCredential())
+                .ToArray();
+        }
+
         if (request.IsGetSelectors)
         {
             response.Selectors = roots
                 .Select(x => new CredentialSelector
                 {
-                    Item = ToCredential(x),
+                    Item = x.ToCredential(),
                     Children = GetToDoSelectorItems(credentials, x.Id).ToArray(),
                 })
                 .ToArray();
@@ -182,14 +169,14 @@ public sealed class CredentialDbService
 
         if (request.IsGetRoots)
         {
-            response.Roots = roots.Select(ToCredential).ToArray();
+            response.Roots = roots.Select(x => x.ToCredential()).ToArray();
         }
 
         foreach (var id in request.GetChildrenIds)
         {
             response.Children.Add(
                 id,
-                credentials.Where(y => y.ParentId == id).Select(ToCredential).ToList()
+                credentials.Where(y => y.ParentId == id).Select(x => x.ToCredential()).ToList()
             );
         }
 
@@ -212,7 +199,7 @@ public sealed class CredentialDbService
         {
             result[i] = new()
             {
-                Item = ToCredential(children[i]),
+                Item = children[i].ToCredential(),
                 Children = GetToDoSelectorItems(items, children[i].Id),
             };
         }
@@ -247,34 +234,7 @@ public sealed class CredentialDbService
     {
         foreach (var edit in edits)
         {
-            foreach (var id in edit.Ids)
-            {
-                var item = dictionary.GetItem(id);
-                item.CustomAvailableCharacters = edit.CustomAvailableCharacters;
-                item.IsEditCustomAvailableCharacters = edit.IsEditCustomAvailableCharacters;
-                item.IsAvailableLowerLatin = edit.IsAvailableLowerLatin;
-                item.IsEditIsAvailableLowerLatin = edit.IsEditIsAvailableLowerLatin;
-                item.IsAvailableNumber = edit.IsAvailableNumber;
-                item.IsEditIsAvailableNumber = edit.IsEditIsAvailableNumber;
-                item.IsAvailableSpecialSymbols = edit.IsAvailableSpecialSymbols;
-                item.IsEditIsAvailableSpecialSymbols = edit.IsEditIsAvailableSpecialSymbols;
-                item.IsAvailableUpperLatin = edit.IsAvailableUpperLatin;
-                item.IsEditIsAvailableUpperLatin = edit.IsEditIsAvailableUpperLatin;
-                item.Key = edit.Key;
-                item.IsEditKey = edit.IsEditKey;
-                item.Length = edit.Length;
-                item.IsEditLength = edit.IsEditLength;
-                item.Login = edit.Login;
-                item.IsEditLogin = edit.IsEditLogin;
-                item.Name = edit.Name;
-                item.IsEditName = edit.IsEditName;
-                item.Regex = edit.Regex;
-                item.IsEditRegex = edit.IsEditRegex;
-                item.Type = edit.Type;
-                item.IsEditType = edit.IsEditType;
-                item.ParentId = edit.ParentId;
-                item.IsEditParentId = edit.IsEditParentId;
-            }
+            dictionary.AddRange(edit.ToEditCredentialEntities());
         }
     }
 
@@ -296,10 +256,10 @@ public sealed class CredentialDbService
 
         for (var index = 0; index < creates.Length; index++)
         {
-            var createCredential = creates[index];
+            var credential = creates[index];
             int siblingCount;
 
-            if (createCredential.ParentId is null)
+            if (credential.ParentId is null)
             {
                 siblingCount = await session.ExecuteScalarInt32Async(
                     new(CredentialsExt.SelectCountQuery + " WHERE ParentId IS NULL"),
@@ -311,29 +271,15 @@ public sealed class CredentialDbService
                 siblingCount = await session.ExecuteScalarInt32Async(
                     new(
                         CredentialsExt.SelectCountQuery + " WHERE ParentId = @ParentId",
-                        session.CreateParameter("@ParentId", createCredential.ParentId)
+                        session.CreateParameter("@ParentId", credential.ParentId)
                     ),
                     ct
                 );
             }
 
-            entities[index] = new()
-            {
-                CustomAvailableCharacters = createCredential.CustomAvailableCharacters,
-                IsAvailableLowerLatin = createCredential.IsAvailableLowerLatin,
-                Id = createCredential.Id,
-                IsAvailableNumber = createCredential.IsAvailableNumber,
-                IsAvailableSpecialSymbols = createCredential.IsAvailableSpecialSymbols,
-                IsAvailableUpperLatin = createCredential.IsAvailableUpperLatin,
-                Key = createCredential.Key,
-                Length = createCredential.Length,
-                Login = createCredential.Login,
-                Name = createCredential.Name,
-                Regex = createCredential.Regex,
-                Type = createCredential.Type,
-                ParentId = createCredential.ParentId,
-                OrderIndex = (uint)siblingCount + 1,
-            };
+            var entity = credential.ToCredentialEntity();
+            entity.OrderIndex = (uint)siblingCount + 1;
+            entities[index] = entity;
         }
 
         await session.AddEntitiesAsync(

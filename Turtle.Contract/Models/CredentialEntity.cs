@@ -15,5 +15,6 @@ public class CredentialEntity
     public string Regex { get; set; } = string.Empty;
     public CredentialType Type { get; set; }
     public uint OrderIndex { get; set; }
+    public bool IsBookmark { get; set; }
     public Guid? ParentId { get; set; }
 }

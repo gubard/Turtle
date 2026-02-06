@@ -27,6 +27,8 @@ public sealed class EditCredential : IEdit
     public string Regex { get; set; } = string.Empty;
     public bool IsEditType { get; set; }
     public CredentialType Type { get; set; }
+    public bool IsEditIsBookmark { get; set; }
+    public bool IsBookmark { get; set; }
     public bool IsEditParentId { get; set; }
     public Guid? ParentId { get; set; }
 }

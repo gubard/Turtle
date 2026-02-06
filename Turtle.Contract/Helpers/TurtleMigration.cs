@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS Credentials (
 );
 "
             },
+            {
+                21,
+                "ALTER TABLE Credentials ADD COLUMN IsBookmark INTEGER NOT NULL CHECK (IsBookmark IN (0, 1)) DEFAULT 0;"
+            },
         }.ToFrozenDictionary();
     }
 }

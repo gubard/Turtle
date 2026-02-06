@@ -11,5 +11,6 @@ public class TurtleGetResponse : IValidationErrors, IResponse
     public Dictionary<Guid, List<Credential>> Parents { get; set; } = [];
     public List<ValidationError> ValidationErrors { get; set; } = [];
     public CredentialSelector[]? Selectors { get; set; }
+    public Credential[]? Bookmarks { get; set; }
     public EventEntity[] Events { get; set; } = [];
 }
