@@ -29,17 +29,17 @@ public sealed class CredentialDbService
         ICredentialDbService,
         ICredentialDbCache
 {
-    private readonly DbValues _dbValues;
+    private readonly IFactory<DbValues> _dbValuesFactory;
     private readonly IFactory<DbServiceOptions> _factoryOptions;
 
     public CredentialDbService(
         IDbConnectionFactory factory,
-        DbValues dbValues,
+        IFactory<DbValues> dbValuesFactory,
         IFactory<DbServiceOptions> factoryOptions
     )
         : base(factory, nameof(CredentialEntity))
     {
-        _dbValues = dbValues;
+        _dbValuesFactory = dbValuesFactory;
         _factoryOptions = factoryOptions;
     }
 
@@ -81,22 +81,23 @@ public sealed class CredentialDbService
         CancellationToken ct
     )
     {
+        var dbValues = _dbValuesFactory.Create();
         var editEntities = new List<EditCredentialEntity>();
         await using var session = await Factory.CreateSessionAsync(ct);
         var options = _factoryOptions.Create();
-        await CreateAsync(session, options, idempotentId, request.CreateCredentials, ct);
+        await CreateAsync(session, options, idempotentId, request.CreateCredentials, dbValues, ct);
         Edit(request.Edits, editEntities);
         ChangeOrder(session, request.ChangeOrders, response.ValidationErrors, editEntities);
 
         await session.EditEntitiesAsync(
-            _dbValues.UserId.ToString(),
+            dbValues.UserId.ToString(),
             idempotentId,
             options.IsUseEvents,
             editEntities.ToArray(),
             ct
         );
 
-        await DeleteAsync(session, options, idempotentId, request.DeleteIds, ct);
+        await DeleteAsync(session, options, idempotentId, request.DeleteIds, dbValues, ct);
         await session.CommitAsync(ct);
 
         return response;
@@ -237,6 +238,7 @@ public sealed class CredentialDbService
         DbServiceOptions options,
         Guid idempotentId,
         Guid[] ids,
+        DbValues dbValues,
         CancellationToken ct
     )
     {
@@ -246,7 +248,7 @@ public sealed class CredentialDbService
         }
 
         return session.DeleteEntitiesAsync(
-            _dbValues.UserId.ToString(),
+            dbValues.UserId.ToString(),
             idempotentId,
             options.IsUseEvents,
             ids,
@@ -298,6 +300,7 @@ public sealed class CredentialDbService
         DbServiceOptions options,
         Guid idempotentId,
         Credential[] creates,
+        DbValues dbValues,
         CancellationToken ct
     )
     {
@@ -330,7 +333,7 @@ public sealed class CredentialDbService
         }
 
         return session.AddEntitiesAsync(
-            $"{_dbValues.UserId}",
+            $"{dbValues.UserId}",
             idempotentId,
             options.IsUseEvents,
             entities.ToArray(),
