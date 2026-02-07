@@ -1,6 +1,6 @@
 ﻿namespace Turtle.Contract.Models;
 
-public class Credential
+public sealed class Credential
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -16,5 +16,6 @@ public class Credential
     public CredentialType Type { get; set; }
     public uint OrderIndex { get; set; }
     public bool IsBookmark { get; set; }
+    public string Link { get; set; } = string.Empty;
     public Guid? ParentId { get; set; }
 }

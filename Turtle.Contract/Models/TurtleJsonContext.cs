@@ -9,13 +9,12 @@ namespace Turtle.Contract.Models;
 [JsonSerializable(typeof(TurtleGetResponse))]
 [JsonSerializable(typeof(TurtlePostResponse))]
 [JsonSerializable(typeof(ChangeOrder))]
-[JsonSerializable(typeof(CreateCredential))]
 [JsonSerializable(typeof(Credential))]
 [JsonSerializable(typeof(CredentialType))]
 [JsonSerializable(typeof(EditCredential))]
 [JsonSerializable(typeof(AlreadyExistsValidationError))]
 [JsonSerializable(typeof(NotFoundValidationError))]
-public partial class TurtleJsonContext : JsonSerializerContext
+public sealed partial class TurtleJsonContext : JsonSerializerContext
 {
     public static readonly IJsonTypeInfoResolver Resolver;
 

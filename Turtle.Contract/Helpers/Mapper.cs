@@ -16,6 +16,7 @@ public static class Mapper
             IsAvailableSpecialSymbols = entity.IsAvailableSpecialSymbols,
             IsAvailableUpperLatin = entity.IsAvailableUpperLatin,
             Key = entity.Key,
+            Link = entity.Link,
             Length = entity.Length,
             Regex = entity.Regex,
             Type = entity.Type,
@@ -33,6 +34,7 @@ public static class Mapper
             Name = credential.Name,
             Login = credential.Login,
             Key = credential.Key,
+            Link = credential.Link,
             Type = credential.Type,
             Id = credential.Id,
             ParentId = credential.ParentId,
@@ -84,6 +86,8 @@ public static class Mapper
                 IsEditParentId = edit.IsEditParentId,
                 IsBookmark = edit.IsBookmark,
                 IsEditIsBookmark = edit.IsEditIsBookmark,
+                IsEditLink = edit.IsEditLink,
+                Link = edit.Link,
             };
         }
 
