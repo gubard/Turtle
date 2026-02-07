@@ -29,9 +29,6 @@ public sealed class CredentialDbService
         ICredentialDbService,
         ICredentialDbCache
 {
-    private readonly IFactory<DbValues> _dbValuesFactory;
-    private readonly IFactory<DbServiceOptions> _factoryOptions;
-
     public CredentialDbService(
         IDbConnectionFactory factory,
         IFactory<DbValues> dbValuesFactory,
@@ -51,6 +48,34 @@ public sealed class CredentialDbService
         return GetCore(request, ct).ConfigureAwait(false);
     }
 
+    public ConfiguredValueTaskAwaitable UpdateAsync(TurtlePostRequest source, CancellationToken ct)
+    {
+        return UpdateCore(source, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
+    {
+        await ExecuteAsync(Guid.NewGuid(), new(), source, ct);
+    }
+
+    public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
+    {
+        return UpdateCore(source, ct).ConfigureAwait(false);
+    }
+
+    protected override ConfiguredValueTaskAwaitable<TurtlePostResponse> ExecuteAsync(
+        Guid idempotentId,
+        TurtlePostResponse response,
+        TurtlePostRequest request,
+        CancellationToken ct
+    )
+    {
+        return ExecuteCore(idempotentId, response, request, ct).ConfigureAwait(false);
+    }
+
+    private readonly IFactory<DbValues> _dbValuesFactory;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
+
     private async ValueTask<TurtleGetResponse> GetCore(
         TurtleGetRequest request,
         CancellationToken ct
@@ -62,16 +87,6 @@ public sealed class CredentialDbService
         var response = CreateResponse(request, credentials);
 
         return response;
-    }
-
-    protected override ConfiguredValueTaskAwaitable<TurtlePostResponse> ExecuteAsync(
-        Guid idempotentId,
-        TurtlePostResponse response,
-        TurtlePostRequest request,
-        CancellationToken ct
-    )
-    {
-        return ExecuteCore(idempotentId, response, request, ct).ConfigureAwait(false);
     }
 
     private async ValueTask<TurtlePostResponse> ExecuteCore(
@@ -442,22 +457,7 @@ public sealed class CredentialDbService
         );
     }
 
-    public ConfiguredValueTaskAwaitable UpdateAsync(TurtlePostRequest source, CancellationToken ct)
-    {
-        return UpdateCore(source, ct).ConfigureAwait(false);
-    }
-
-    private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
-    {
-        await ExecuteAsync(Guid.NewGuid(), new(), source, ct);
-    }
-
-    public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
-    {
-        return UpdateCore(source, ct).ConfigureAwait(false);
-    }
-
-    public async ValueTask UpdateCore(TurtleGetResponse source, CancellationToken ct)
+    private async ValueTask UpdateCore(TurtleGetResponse source, CancellationToken ct)
     {
         await using var session = await Factory.CreateSessionAsync(ct);
         var entities = GetCredentialEntities(source);
@@ -486,6 +486,30 @@ public sealed class CredentialDbService
             await session.ExecuteNonQueryAsync(query, ct);
         }
 
+        if (source.Selectors is not null)
+        {
+            var ids = source
+                .Selectors.SelectMany(x => GetCredentialEntities(x).Select(y => y.Id))
+                .ToArray();
+
+            var deleteIds = await session.GetGuidAsync(
+                new(
+                    CredentialsExt.SelectIdsQuery
+                        + $" WHERE Id NOT IN ({ids.ToParameterNames("Id")})",
+                    session.ToDbParameters(ids, "Id")
+                ),
+                ct
+            );
+
+            if (deleteIds.Length != 0)
+            {
+                await session.ExecuteNonQueryAsync(
+                    deleteIds.CreateDeleteCredentialsQuery(session),
+                    ct
+                );
+            }
+        }
+
         await session.CommitAsync(ct);
     }
 
@@ -494,11 +518,28 @@ public sealed class CredentialDbService
         return source
             .Children.SelectMany(x => x.Value)
             .Select(x => x.ToCredentialEntity())
+            .Concat(
+                source.Selectors?.SelectMany(GetCredentialEntities)
+                    ?? Enumerable.Empty<CredentialEntity>()
+            )
             .Concat(source.Parents.SelectMany(x => x.Value).Select(x => x.ToCredentialEntity()))
             .Concat(
                 source.Roots?.Select(x => x.ToCredentialEntity())
                     ?? Enumerable.Empty<CredentialEntity>()
             )
             .ToArray();
+    }
+
+    private static IEnumerable<CredentialEntity> GetCredentialEntities(CredentialSelector selector)
+    {
+        yield return selector.Item.ToCredentialEntity();
+
+        foreach (var child in selector.Children)
+        {
+            foreach (var item in GetCredentialEntities(child))
+            {
+                yield return item;
+            }
+        }
     }
 }
