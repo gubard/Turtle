@@ -102,7 +102,6 @@ public sealed class CredentialDbService
         var options = _factoryOptions.Create();
         await CreateAsync(session, options, idempotentId, request.CreateCredentials, dbValues, ct);
         Edit(request.Edits, edits);
-
         await ChangeOrderAsync(session, request.ChangeOrders, response.ValidationErrors, edits, ct);
 
         await session.EditEntitiesAsync(
