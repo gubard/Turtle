@@ -63,7 +63,7 @@ public sealed class CredentialDbService
         return UpdateCore(source, ct).ConfigureAwait(false);
     }
 
-    protected override ConfiguredValueTaskAwaitable<TurtlePostResponse> ExecuteAsync(
+    protected override ConfiguredValueTaskAwaitable ExecuteAsync(
         Guid idempotentId,
         TurtlePostResponse response,
         TurtlePostRequest request,
@@ -89,7 +89,7 @@ public sealed class CredentialDbService
         return response;
     }
 
-    private async ValueTask<TurtlePostResponse> ExecuteCore(
+    private async ValueTask ExecuteCore(
         Guid idempotentId,
         TurtlePostResponse response,
         TurtlePostRequest request,
@@ -114,8 +114,6 @@ public sealed class CredentialDbService
 
         await DeleteAsync(session, options, idempotentId, request.DeleteIds, dbValues, ct);
         await session.CommitAsync(ct);
-
-        return response;
     }
 
     private void AddParents(
