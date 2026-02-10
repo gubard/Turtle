@@ -283,7 +283,7 @@ public sealed class CredentialDbService
                 siblingCount = await session.ExecuteScalarInt32Async(
                     new(
                         CredentialsExt.SelectCountQuery + " WHERE ParentId = @ParentId",
-                        session.CreateParameter("@ParentId", credential.ParentId)
+                        new QueryParameter("@ParentId", credential.ParentId)
                     ),
                     ct
                 );
@@ -333,7 +333,7 @@ public sealed class CredentialDbService
             new SqlQuery(
                 CredentialsExt.SelectQuery
                     + $" WHERE ParentId IN ({parentItems.ToParameterNames("ParentId")})",
-                session.ToDbParameters(parentItems, "ParentId")
+                parentItems.ToQueryParameters("ParentId")
             ),
             ct
         );
@@ -450,7 +450,7 @@ public sealed class CredentialDbService
                  )
                  SELECT * FROM hierarchy
             """,
-            session.ToDbParameters(ids, "Id")
+            ids.ToQueryParameters("Id")
         );
     }
 
@@ -468,14 +468,14 @@ public sealed class CredentialDbService
 
         var updateQueries = entities
             .Where(x => exists.Contains(x.Id))
-            .Select(x => x.CreateUpdateCredentialsQuery(session))
+            .Select(x => x.CreateUpdateCredentialsQuery())
             .ToArray();
 
         var inserts = entities.Where(x => !exists.Contains(x.Id)).ToArray();
 
         if (inserts.Length != 0)
         {
-            await session.ExecuteNonQueryAsync(inserts.CreateInsertQuery(session), ct);
+            await session.ExecuteNonQueryAsync(inserts.CreateInsertQuery(), ct);
         }
 
         foreach (var query in updateQueries)
@@ -493,17 +493,14 @@ public sealed class CredentialDbService
                 new(
                     CredentialsExt.SelectIdsQuery
                         + $" WHERE Id NOT IN ({ids.ToParameterNames("Id")})",
-                    session.ToDbParameters(ids, "Id")
+                    ids.ToQueryParameters("Id")
                 ),
                 ct
             );
 
             if (deleteIds.Length != 0)
             {
-                await session.ExecuteNonQueryAsync(
-                    deleteIds.CreateDeleteCredentialsQuery(session),
-                    ct
-                );
+                await session.ExecuteNonQueryAsync(deleteIds.CreateDeleteCredentialsQuery(), ct);
             }
         }
 
