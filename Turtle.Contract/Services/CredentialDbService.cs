@@ -301,6 +301,8 @@ public sealed class CredentialDbService
             entities,
             ct
         );
+
+        await session.CommitAsync(ct);
     }
 
     private async ValueTask ChangeOrderAsync(
