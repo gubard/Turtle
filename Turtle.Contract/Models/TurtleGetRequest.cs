@@ -1,6 +1,6 @@
 ﻿namespace Turtle.Contract.Models;
 
-public class TurtleGetRequest
+public sealed class TurtleGetRequest
 {
     public bool IsGetRoots { get; set; }
     public bool IsGetSelectors { get; set; }
