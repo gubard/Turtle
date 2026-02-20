@@ -2,44 +2,45 @@
 using System.Text.Json.Serialization.Metadata;
 using Gaia.Models;
 
-namespace Turtle.Contract.Models;
-
-[JsonSerializable(typeof(TurtleGetRequest))]
-[JsonSerializable(typeof(TurtlePostRequest))]
-[JsonSerializable(typeof(TurtleGetResponse))]
-[JsonSerializable(typeof(TurtlePostResponse))]
-[JsonSerializable(typeof(ChangeOrder))]
-[JsonSerializable(typeof(Credential))]
-[JsonSerializable(typeof(CredentialType))]
-[JsonSerializable(typeof(EditCredential))]
-[JsonSerializable(typeof(AlreadyExistsValidationError))]
-[JsonSerializable(typeof(NotFoundValidationError))]
-public sealed partial class TurtleJsonContext : JsonSerializerContext
+namespace Turtle.Contract.Models
 {
-    public static readonly IJsonTypeInfoResolver Resolver;
-
-    static TurtleJsonContext()
+    [JsonSerializable(typeof(TurtleGetRequest))]
+    [JsonSerializable(typeof(TurtlePostRequest))]
+    [JsonSerializable(typeof(TurtleGetResponse))]
+    [JsonSerializable(typeof(TurtlePostResponse))]
+    [JsonSerializable(typeof(ChangeOrder))]
+    [JsonSerializable(typeof(Credential))]
+    [JsonSerializable(typeof(CredentialType))]
+    [JsonSerializable(typeof(EditCredential))]
+    [JsonSerializable(typeof(AlreadyExistsValidationError))]
+    [JsonSerializable(typeof(NotFoundValidationError))]
+    public sealed partial class TurtleJsonContext : JsonSerializerContext
     {
-        Resolver = Default.WithAddedModifier(typeInfo =>
+        public static readonly IJsonTypeInfoResolver Resolver;
+
+        static TurtleJsonContext()
         {
-            if (typeInfo.Type == typeof(ValidationError))
+            Resolver = Default.WithAddedModifier(typeInfo =>
             {
-                typeInfo.PolymorphismOptions = new()
+                if (typeInfo.Type == typeof(ValidationError))
                 {
-                    TypeDiscriminatorPropertyName = "$type",
-                    DerivedTypes =
+                    typeInfo.PolymorphismOptions = new()
                     {
-                        new(
-                            typeof(AlreadyExistsValidationError),
-                            typeof(AlreadyExistsValidationError).FullName!
-                        ),
-                        new(
-                            typeof(NotFoundValidationError),
-                            typeof(NotFoundValidationError).FullName!
-                        ),
-                    },
-                };
-            }
-        });
+                        TypeDiscriminatorPropertyName = "$type",
+                        DerivedTypes =
+                        {
+                            new(
+                                typeof(AlreadyExistsValidationError),
+                                typeof(AlreadyExistsValidationError).FullName!
+                            ),
+                            new(
+                                typeof(NotFoundValidationError),
+                                typeof(NotFoundValidationError).FullName!
+                            ),
+                        },
+                    };
+                }
+            });
+        }
     }
 }

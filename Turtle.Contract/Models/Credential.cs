@@ -1,21 +1,22 @@
-﻿namespace Turtle.Contract.Models;
-
-public sealed class Credential
+﻿namespace Turtle.Contract.Models
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Login { get; set; } = string.Empty;
-    public string Key { get; set; } = string.Empty;
-    public bool IsAvailableUpperLatin { get; set; }
-    public bool IsAvailableLowerLatin { get; set; }
-    public bool IsAvailableNumber { get; set; }
-    public bool IsAvailableSpecialSymbols { get; set; }
-    public string CustomAvailableCharacters { get; set; } = string.Empty;
-    public ushort Length { get; set; }
-    public string Regex { get; set; } = string.Empty;
-    public CredentialType Type { get; set; }
-    public uint OrderIndex { get; set; }
-    public bool IsBookmark { get; set; }
-    public string Link { get; set; } = string.Empty;
-    public Guid? ParentId { get; set; }
+    public sealed class Credential
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Login { get; set; } = string.Empty;
+        public string Key { get; set; } = string.Empty;
+        public bool IsAvailableUpperLatin { get; set; }
+        public bool IsAvailableLowerLatin { get; set; }
+        public bool IsAvailableNumber { get; set; }
+        public bool IsAvailableSpecialSymbols { get; set; }
+        public string CustomAvailableCharacters { get; set; } = string.Empty;
+        public ushort Length { get; set; }
+        public string Regex { get; set; } = string.Empty;
+        public CredentialType Type { get; set; }
+        public uint OrderIndex { get; set; }
+        public bool IsBookmark { get; set; }
+        public string Link { get; set; } = string.Empty;
+        public Guid? ParentId { get; set; }
+    }
 }

@@ -1,18 +1,18 @@
 ﻿using System.Collections.Frozen;
 
-namespace Turtle.Contract.Helpers;
-
-public static class TurtleMigration
+namespace Turtle.Contract.Helpers
 {
-    public static readonly FrozenDictionary<int, string> Migrations;
-
-    static TurtleMigration()
+    public static class TurtleMigration
     {
-        Migrations = new Dictionary<int, string>
+        public static readonly FrozenDictionary<int, string> Migrations;
+
+        static TurtleMigration()
         {
+            Migrations = new Dictionary<int, string>
             {
-                6,
-                @"
+                {
+                    6,
+                    @"
 CREATE TABLE IF NOT EXISTS Credentials (
     Id TEXT PRIMARY KEY NOT NULL,
     Name TEXT NOT NULL CHECK(length(Name) <= 255),
@@ -32,15 +32,16 @@ CREATE TABLE IF NOT EXISTS Credentials (
     FOREIGN KEY (ParentId) REFERENCES Credentials (Id)
 );
 "
-            },
-            {
-                21,
-                "ALTER TABLE Credentials ADD COLUMN IsBookmark INTEGER NOT NULL CHECK (IsBookmark IN (0, 1)) DEFAULT 0;"
-            },
-            {
-                22,
-                "ALTER TABLE Credentials ADD COLUMN Link TEXT NOT NULL CHECK(length(Link) <= 1000) DEFAULT '';"
-            },
-        }.ToFrozenDictionary();
+                },
+                {
+                    21,
+                    "ALTER TABLE Credentials ADD COLUMN IsBookmark INTEGER NOT NULL CHECK (IsBookmark IN (0, 1)) DEFAULT 0;"
+                },
+                {
+                    22,
+                    "ALTER TABLE Credentials ADD COLUMN Link TEXT NOT NULL CHECK(length(Link) <= 1000) DEFAULT '';"
+                },
+            }.ToFrozenDictionary();
+        }
     }
 }

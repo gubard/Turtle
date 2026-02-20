@@ -1,7 +1,8 @@
-namespace Turtle.Contract.Models;
-
-public enum CredentialType : byte
+namespace Turtle.Contract.Models
 {
-    Value,
-    Group,
+    public enum CredentialType : byte
+    {
+        Value,
+        Group,
+    }
 }

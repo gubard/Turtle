@@ -2,11 +2,12 @@
 using Gaia.Services;
 using Nestor.Db.Models;
 
-namespace Turtle.Contract.Models;
-
-public sealed class TurtlePostResponse : IValidationErrors, IPostResponse
+namespace Turtle.Contract.Models
 {
-    public List<ValidationError> ValidationErrors { get; set; } = [];
-    public EventEntity[] Events { get; set; } = [];
-    public bool IsEventSaved { get; set; }
+    public sealed class TurtlePostResponse : IValidationErrors, IPostResponse
+    {
+        public List<ValidationError> ValidationErrors { get; set; } = [];
+        public EventEntity[] Events { get; set; } = [];
+        public bool IsEventSaved { get; set; }
+    }
 }

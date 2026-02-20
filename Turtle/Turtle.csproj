@@ -11,6 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Zeus\Zeus\Zeus.csproj" />
-    <ProjectReference Include="..\Turtle.Contract\Turtle.Contract.csproj" />
+    <ProjectReference Include="..\Turtle.Db\Turtle.Db.csproj" />
   </ItemGroup>
 </Project>

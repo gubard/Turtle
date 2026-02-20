@@ -8,21 +8,9 @@ using Nestor.Db.Models;
 using Nestor.Db.Services;
 using Turtle.Contract.Helpers;
 using Turtle.Contract.Models;
+using Turtle.Contract.Services;
 
-namespace Turtle.Contract.Services;
-
-public interface ICredentialHttpService
-    : ICredentialService,
-        IHttpService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
-
-public interface ICredentialService
-    : IService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
-
-public interface ICredentialDbCache : IDbCache<TurtlePostRequest, TurtleGetResponse>;
-
-public interface ICredentialDbService
-    : ICredentialService,
-        IDbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>;
+namespace Turtle.Db.Services;
 
 public sealed class CredentialDbService
     : DbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,

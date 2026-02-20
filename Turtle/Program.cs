@@ -3,6 +3,7 @@ using Nestor.Db.Helpers;
 using Turtle.Contract.Helpers;
 using Turtle.Contract.Models;
 using Turtle.Contract.Services;
+using Turtle.Db.Services;
 using Zeus.Helpers;
 
 InsertHelper.AddDefaultInsert(
