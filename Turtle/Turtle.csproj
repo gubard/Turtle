@@ -7,9 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\Zeus\Zeus\Zeus.csproj" />
     <ProjectReference Include="..\Turtle.Db\Turtle.Db.csproj" />
   </ItemGroup>
