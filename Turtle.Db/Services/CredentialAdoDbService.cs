@@ -12,12 +12,12 @@ using Turtle.Contract.Services;
 
 namespace Turtle.Db.Services;
 
-public sealed class CredentialDbService
-    : DbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
+public sealed class CredentialAdoDbService
+    : AdoDbService<TurtleGetRequest, TurtlePostRequest, TurtleGetResponse, TurtlePostResponse>,
         ICredentialDbService,
         ICredentialDbCache
 {
-    public CredentialDbService(
+    public CredentialAdoDbService(
         IDbConnectionFactory factory,
         IFactory<DbValues> dbValuesFactory,
         IFactory<DbServiceOptions> factoryOptions
