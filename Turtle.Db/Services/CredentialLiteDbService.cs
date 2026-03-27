@@ -35,12 +35,7 @@ public sealed class CredentialLiteDbService
         CancellationToken ct
     )
     {
-        using var database = Factory.Create();
-        var collection = database.GetCredentialEntityCollection();
-        var credentials = collection.FindAll().Select(x => x.ToCredentialEntity()).ToArray();
-        var response = CreateResponse(request, credentials);
-
-        return TaskHelper.FromResult(response);
+        return GetCore(request, ct).ConfigureAwait(false);
     }
 
     public ConfiguredValueTaskAwaitable UpdateAsync(TurtlePostRequest source, CancellationToken ct)
@@ -48,21 +43,68 @@ public sealed class CredentialLiteDbService
         return UpdateCore(source, ct).ConfigureAwait(false);
     }
 
-    private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
+    public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
     {
-        await ExecuteAsync(Guid.NewGuid(), new(), source, ct);
+        return UpdateCore(source, ct).ConfigureAwait(false);
     }
 
-    public ConfiguredValueTaskAwaitable UpdateAsync(TurtleGetResponse source, CancellationToken ct)
+    protected override ConfiguredValueTaskAwaitable ExecuteAsync(
+        Guid idempotentId,
+        TurtlePostResponse response,
+        TurtlePostRequest request,
+        CancellationToken ct
+    )
+    {
+        return ExecuteCore(idempotentId, response, request, ct).ConfigureAwait(false);
+    }
+
+    private readonly IFactory<DbValues> _dbValuesFactory;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
+
+    private async ValueTask ExecuteCore(
+        Guid idempotentId,
+        TurtlePostResponse response,
+        TurtlePostRequest request,
+        CancellationToken ct
+    )
+    {
+        var dbValues = _dbValuesFactory.Create();
+        var edits = new AutoDictionary<Guid, EditCredentialEntity>();
+        using var database = await Factory.CreateAsync(ct);
+        var collection = database.GetCredentialEntityCollection();
+        var options = _factoryOptions.Create();
+        Create(database, collection, options, idempotentId, request.CreateCredentials, dbValues);
+        Edit(request.Edits, edits);
+
+        UpdateChangeOrder(
+            database,
+            collection,
+            request.ChangeOrders,
+            response.ValidationErrors,
+            edits
+        );
+
+        database.EditEntities(
+            dbValues.UserId.ToString(),
+            idempotentId,
+            options.IsUseEvents,
+            edits.ToItemsArray()
+        );
+
+        Delete(database, options, idempotentId, request.DeleteIds, dbValues);
+        await database.SaveChangesAsync(ct);
+    }
+
+    private async ValueTask UpdateCore(TurtleGetResponse source, CancellationToken ct)
     {
         var entities = GetCredentialEntities(source);
 
         if (entities.Length == 0)
         {
-            return TaskHelper.ConfiguredCompletedTask;
+            return;
         }
 
-        using var database = Factory.Create();
+        using var database = await Factory.CreateAsync(ct);
         var collection = database.GetCredentialEntityCollection();
 
         var exists = entities
@@ -107,49 +149,26 @@ public sealed class CredentialLiteDbService
             }
         }
 
-        database.SaveChanges();
-
-        return TaskHelper.ConfiguredCompletedTask;
+        await database.SaveChangesAsync(ct);
     }
 
-    protected override ConfiguredValueTaskAwaitable ExecuteAsync(
-        Guid idempotentId,
-        TurtlePostResponse response,
-        TurtlePostRequest request,
+    private async ValueTask<TurtleGetResponse> GetCore(
+        TurtleGetRequest request,
         CancellationToken ct
     )
     {
-        var dbValues = _dbValuesFactory.Create();
-        var edits = new AutoDictionary<Guid, EditCredentialEntity>();
-        using var database = Factory.Create();
+        using var database = await Factory.CreateAsync(ct);
         var collection = database.GetCredentialEntityCollection();
-        var options = _factoryOptions.Create();
-        Create(database, collection, options, idempotentId, request.CreateCredentials, dbValues);
-        Edit(request.Edits, edits);
+        var credentials = collection.FindAll().Select(x => x.ToCredentialEntity()).ToArray();
+        var response = CreateResponse(request, credentials);
 
-        UpdateChangeOrder(
-            database,
-            collection,
-            request.ChangeOrders,
-            response.ValidationErrors,
-            edits
-        );
-
-        database.EditEntities(
-            dbValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            edits.ToItemsArray()
-        );
-
-        Delete(database, options, idempotentId, request.DeleteIds, dbValues);
-        database.SaveChanges();
-
-        return TaskHelper.ConfiguredCompletedTask;
+        return response;
     }
 
-    private readonly IFactory<DbValues> _dbValuesFactory;
-    private readonly IFactory<DbServiceOptions> _factoryOptions;
+    private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
+    {
+        await ExecuteAsync(Guid.NewGuid(), new(), source, ct);
+    }
 
     private void AddParents(
         TurtleGetResponse response,
