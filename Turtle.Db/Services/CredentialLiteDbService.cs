@@ -70,29 +70,35 @@ public sealed class CredentialLiteDbService
     {
         var dbValues = _dbValuesFactory.Create();
         var edits = new AutoDictionary<Guid, EditCredentialEntity>();
-        using var database = await Factory.CreateAsync(ct);
-        var collection = database.GetCredentialEntityCollection();
         var options = _factoryOptions.Create();
-        Create(database, collection, options, idempotentId, request.CreateCredentials, dbValues);
-        Edit(request.Edits, edits);
+        var database = await Factory.CreateAsync(ct);
 
-        UpdateChangeOrder(
-            database,
-            collection,
-            request.ChangeOrders,
-            response.ValidationErrors,
-            edits
+        await database.ExecuteAsync(
+            db =>
+            {
+                var collection = db.GetCredentialEntityCollection();
+                Create(db, collection, options, idempotentId, request.CreateCredentials, dbValues);
+                Edit(request.Edits, edits);
+
+                UpdateChangeOrder(
+                    database,
+                    collection,
+                    request.ChangeOrders,
+                    response.ValidationErrors,
+                    edits
+                );
+
+                db.EditEntities(
+                    dbValues.UserId.ToString(),
+                    idempotentId,
+                    options.IsUseEvents,
+                    edits.ToItemsArray()
+                );
+
+                Delete(db, options, idempotentId, request.DeleteIds, dbValues);
+            },
+            ct
         );
-
-        database.EditEntities(
-            dbValues.UserId.ToString(),
-            idempotentId,
-            options.IsUseEvents,
-            edits.ToItemsArray()
-        );
-
-        Delete(database, options, idempotentId, request.DeleteIds, dbValues);
-        await database.SaveChangesAsync(ct);
     }
 
     private async ValueTask UpdateCore(TurtleGetResponse source, CancellationToken ct)
@@ -104,52 +110,57 @@ public sealed class CredentialLiteDbService
             return;
         }
 
-        using var database = await Factory.CreateAsync(ct);
-        var collection = database.GetCredentialEntityCollection();
+        var database = await Factory.CreateAsync(ct);
 
-        var exists = entities
-            .Where(x => collection.Exists(Query.EQ("_id", x.Id)))
-            .Select(x => x.Id)
-            .ToArray();
-
-        var updates = entities
-            .Where(x => exists.Contains(x.Id))
-            .Select(x => x.ToBsonDocument())
-            .ToArray();
-
-        var inserts = entities
-            .Where(x => !exists.Contains(x.Id))
-            .Select(x => x.ToBsonDocument())
-            .ToArray();
-
-        if (inserts.Length != 0)
-        {
-            collection.Insert(inserts);
-        }
-
-        if (updates.Length != 0)
-        {
-            collection.Update(updates);
-        }
-
-        if (source.Selectors is not null)
-        {
-            var ids = source
-                .Selectors.SelectMany(x => GetCredentialEntities(x).Select(y => y.Id))
-                .ToArray();
-
-            var deleteIds = collection
-                .Find(Query.Not(Query.In("_id", ids.Select(x => new BsonValue(x)))))
-                .Select(x => x["_id"])
-                .ToArray();
-
-            if (deleteIds.Length != 0)
+        await database.ExecuteAsync(
+            db =>
             {
-                collection.Delete(Query.In("_id", deleteIds));
-            }
-        }
+                var collection = db.GetCredentialEntityCollection();
 
-        await database.SaveChangesAsync(ct);
+                var exists = entities
+                    .Where(x => collection.Exists(Query.EQ("_id", x.Id)))
+                    .Select(x => x.Id)
+                    .ToArray();
+
+                var updates = entities
+                    .Where(x => exists.Contains(x.Id))
+                    .Select(x => x.ToBsonDocument())
+                    .ToArray();
+
+                var inserts = entities
+                    .Where(x => !exists.Contains(x.Id))
+                    .Select(x => x.ToBsonDocument())
+                    .ToArray();
+
+                if (inserts.Length != 0)
+                {
+                    collection.Insert(inserts);
+                }
+
+                if (updates.Length != 0)
+                {
+                    collection.Update(updates);
+                }
+
+                if (source.Selectors is not null)
+                {
+                    var ids = source
+                        .Selectors.SelectMany(x => GetCredentialEntities(x).Select(y => y.Id))
+                        .ToArray();
+
+                    var deleteIds = collection
+                        .Find(Query.Not(Query.In("_id", ids.Select(x => new BsonValue(x)))))
+                        .Select(x => x["_id"])
+                        .ToArray();
+
+                    if (deleteIds.Length != 0)
+                    {
+                        collection.Delete(Query.In("_id", deleteIds));
+                    }
+                }
+            },
+            ct
+        );
     }
 
     private async ValueTask<TurtleGetResponse> GetCore(
@@ -157,12 +168,22 @@ public sealed class CredentialLiteDbService
         CancellationToken ct
     )
     {
-        using var database = await Factory.CreateAsync(ct);
-        var collection = database.GetCredentialEntityCollection();
-        var credentials = collection.FindAll().Select(x => x.ToCredentialEntity()).ToArray();
-        var response = CreateResponse(request, credentials);
+        var database = await Factory.CreateAsync(ct);
 
-        return response;
+        return await database.ExecuteAsync(
+            db =>
+            {
+                var collection = db.GetCredentialEntityCollection();
+                var credentials = collection
+                    .FindAll()
+                    .Select(x => x.ToCredentialEntity())
+                    .ToArray();
+                var response = CreateResponse(request, credentials);
+
+                return response;
+            },
+            ct
+        );
     }
 
     private async ValueTask UpdateCore(TurtlePostRequest source, CancellationToken ct)
@@ -274,7 +295,7 @@ public sealed class CredentialLiteDbService
     }
 
     private void Delete(
-        IDatabase database,
+        UltraLiteDatabase database,
         DbServiceOptions options,
         Guid idempotentId,
         Guid[] ids,
@@ -298,7 +319,7 @@ public sealed class CredentialLiteDbService
     }
 
     private void Create(
-        IDatabase database,
+        UltraLiteDatabase database,
         UltraLiteCollection<BsonDocument> collection,
         DbServiceOptions options,
         Guid idempotentId,
