@@ -37,4 +37,8 @@ await WebApplication
         TurtlePostRequest,
         TurtleGetResponse,
         TurtlePostResponse
-    >(migration.ToFrozenDictionary(), TurtleJsonContext.Default.Options, "Turtle");
+    >(
+        migration.ToFrozenDictionary(),
+        "Turtle",
+        builder => builder.Services.AddSingleton(TurtleJsonContext.Default.Options)
+    );
