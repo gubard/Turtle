@@ -1,14 +1,15 @@
 using System.Collections.Frozen;
 using Nestor.Db.Helpers;
+using Nestor.Db.LiteDb.Helpers;
 using Turtle.Contract.Helpers;
 using Turtle.Contract.Models;
 using Turtle.Contract.Services;
 using Turtle.Db.Services;
 using Zeus.Helpers;
 
-InsertHelper.AddDefaultInsert(
+DefaultBsonDocument.AddDefaultBsonDocument(
     nameof(CredentialEntity),
-    i => new CredentialEntity[] { new() { Id = i } }.CreateInsertQuery()
+    i => new CredentialEntity { Id = i }.ToBsonDocument()
 );
 
 var migration = new Dictionary<int, string>();
