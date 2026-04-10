@@ -448,84 +448,16 @@ public sealed class CredentialLiteDbService
         }
     }
 
-    private SqlQuery CreateSqlForAllChildren(Guid[] ids, DbSession session)
-    {
-        return new(
-            $$"""
-            WITH RECURSIVE hierarchy(
-                     Id,
-                     Name,
-                     Login,
-                     Key,
-                     IsAvailableUpperLatin,
-                     IsAvailableLowerLatin,
-                     IsAvailableNumber,
-                     IsAvailableSpecialSymbols,
-                     CustomAvailableCharacters,
-                     Length,
-                     Regex,
-                     Type,
-                     OrderIndex,
-                     ParentId
-                 ) AS (
-                     SELECT
-                     Id,
-                     Name,
-                     Login,
-                     Key,
-                     IsAvailableUpperLatin,
-                     IsAvailableLowerLatin,
-                     IsAvailableNumber,
-                     IsAvailableSpecialSymbols,
-                     CustomAvailableCharacters,
-                     Length,
-                     Regex,
-                     Type,
-                     OrderIndex,
-                     ParentId
-                     FROM Credentials
-                     WHERE Id IN ({{ids.ToParameterNames("Id")}})
-
-                     UNION ALL
-
-                     SELECT
-                     t.Id,
-                     t.Name,
-                     t.Login,
-                     t.Key,
-                     t.IsAvailableUpperLatin,
-                     t.IsAvailableLowerLatin,
-                     t.IsAvailableNumber,
-                     t.IsAvailableSpecialSymbols,
-                     t.CustomAvailableCharacters,
-                     t.Length,
-                     t.Regex,
-                     t.Type,
-                     t.OrderIndex,
-                     t.ParentId
-                     FROM Credentials t
-                     INNER JOIN hierarchy h ON t.ParentId = h.Id
-                 )
-                 SELECT * FROM hierarchy
-            """,
-            ids.ToQueryParameters("Id")
-        );
-    }
-
     private static CredentialEntity[] GetCredentialEntities(TurtleGetResponse source)
     {
         return source
             .Children.SelectMany(x => x.Value)
             .Select(x => x.ToCredentialEntity())
-            .Concat(
-                source.Selectors?.SelectMany(GetCredentialEntities)
-                    ?? Enumerable.Empty<CredentialEntity>()
-            )
+            .Concat(source.Bookmarks?.Select(x => x.ToCredentialEntity()) ?? [])
+            .Concat(source.Selectors?.SelectMany(GetCredentialEntities) ?? [])
             .Concat(source.Parents.SelectMany(x => x.Value).Select(x => x.ToCredentialEntity()))
-            .Concat(
-                source.Roots?.Select(x => x.ToCredentialEntity())
-                    ?? Enumerable.Empty<CredentialEntity>()
-            )
+            .Concat(source.Roots?.Select(x => x.ToCredentialEntity()) ?? [])
+            .DistinctBy(x => x.Id)
             .ToArray();
     }
 
