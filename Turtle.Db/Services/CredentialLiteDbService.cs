@@ -72,6 +72,10 @@ public sealed class CredentialLiteDbService
         var edits = new AutoDictionary<Guid, EditCredentialEntity>();
         var options = _factoryOptions.Create();
         var database = await Factory.CreateAsync(ct);
+        var changeOrders = request.ChangeOrders;
+        var validationErrors = response.ValidationErrors;
+        var userId = dbValues.UserId.ToString();
+        var isUseEvents = options.IsUseEvents;
 
         await database.ExecuteAsync(
             db =>
@@ -79,22 +83,9 @@ public sealed class CredentialLiteDbService
                 var collection = db.GetCredentialEntityCollection();
                 Create(db, collection, options, idempotentId, request.CreateCredentials, dbValues);
                 Edit(request.Edits, edits);
-
-                UpdateChangeOrder(
-                    database,
-                    collection,
-                    request.ChangeOrders,
-                    response.ValidationErrors,
-                    edits
-                );
-
-                db.EditEntities(
-                    dbValues.UserId.ToString(),
-                    idempotentId,
-                    options.IsUseEvents,
-                    edits.ToItemsArray()
-                );
-
+                UpdateChangeOrder(collection, changeOrders, validationErrors, edits);
+                var items = edits.ToItemsArray();
+                db.EditEntities(userId, idempotentId, isUseEvents, items);
                 Delete(db, options, idempotentId, request.DeleteIds, dbValues);
             },
             ct
@@ -142,22 +133,16 @@ public sealed class CredentialLiteDbService
                     collection.Update(updates);
                 }
 
-                if (source.Selectors is not null)
+                if (source.Selectors is null)
                 {
-                    var ids = source
-                        .Selectors.SelectMany(x => GetCredentialEntities(x).Select(y => y.Id))
-                        .ToArray();
-
-                    var deleteIds = collection
-                        .Find(Query.Not(Query.In("_id", ids.Select(x => new BsonValue(x)))))
-                        .Select(x => x["_id"])
-                        .ToArray();
-
-                    if (deleteIds.Length != 0)
-                    {
-                        collection.Delete(Query.In("_id", deleteIds));
-                    }
+                    return;
                 }
+
+                var ids = source
+                    .Selectors.SelectMany(x => GetCredentialEntities(x).Select(y => y.Id))
+                    .ToArray();
+
+                collection.Delete(Query.Not(Query.In("_id", ids.Select(x => new BsonValue(x)))));
             },
             ct
         );
@@ -352,7 +337,6 @@ public sealed class CredentialLiteDbService
     }
 
     private void UpdateChangeOrder(
-        IDatabase database,
         UltraLiteCollection<BsonDocument> collection,
         ChangeOrder[] changeOrders,
         List<ValidationError> errors,
@@ -406,10 +390,8 @@ public sealed class CredentialLiteDbService
                 .ToArray();
         }
 
-        for (var index = 0; index < changeOrders.Length; index++)
+        foreach (var changeOrder in changeOrders)
         {
-            var changeOrder = changeOrders[index];
-
             var inserts = changeOrder
                 .InsertIds.Select(x => insertItemsDictionary[x])
                 .OrderBy(x => x.OrderIndex)
@@ -422,8 +404,9 @@ public sealed class CredentialLiteDbService
                 continue;
             }
 
+            var order = changeOrder;
             var siblings = allSiblings
-                .Where(x => x.ParentId == item.ParentId && !changeOrder.InsertIds.Contains(x.Id))
+                .Where(x => x.ParentId == item.ParentId && !order.InsertIds.Contains(x.Id))
                 .OrderBy(x => x.OrderIndex)
                 .ToList();
 
@@ -436,14 +419,16 @@ public sealed class CredentialLiteDbService
                 var isEditOrderIndex = siblings[i].OrderIndex != i + 1;
                 var isEditParentId = siblings[i].ParentId != startItem.ParentId;
 
-                if (isEditOrderIndex || isEditParentId)
+                if (!isEditOrderIndex && !isEditParentId)
                 {
-                    var edit = edits.GetItem(siblings[i].Id);
-                    edit.IsEditOrderIndex = isEditOrderIndex;
-                    edit.IsEditParentId = isEditParentId;
-                    edit.OrderIndex = (uint)i + 1;
-                    edit.ParentId = item.ParentId;
+                    continue;
                 }
+
+                var edit = edits.GetItem(siblings[i].Id);
+                edit.IsEditOrderIndex = isEditOrderIndex;
+                edit.IsEditParentId = isEditParentId;
+                edit.OrderIndex = (uint)i + 1;
+                edit.ParentId = item.ParentId;
             }
         }
     }
