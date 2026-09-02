@@ -20,7 +20,7 @@ public sealed class CredentialLiteDbService
         ICredentialDbCache
 {
     public CredentialLiteDbService(
-        IDatabaseFactory factory,
+        IUltraLiteDatabaseFactory factory,
         IFactory<DbValues> dbValuesFactory,
         IFactory<DbServiceOptions> factoryOptions
     )
@@ -87,6 +87,8 @@ public sealed class CredentialLiteDbService
                 var items = edits.ToItemsArray();
                 db.EditEntities(userId, idempotentId, isUseEvents, items);
                 Delete(db, options, idempotentId, request.DeleteIds, dbValues);
+
+                return TaskHelper.ConfiguredCompletedTask;
             },
             ct
         );
@@ -135,7 +137,7 @@ public sealed class CredentialLiteDbService
 
                 if (source.Selectors is null)
                 {
-                    return;
+                    return TaskHelper.ConfiguredCompletedTask;
                 }
 
                 var ids = source
@@ -143,6 +145,8 @@ public sealed class CredentialLiteDbService
                     .ToArray();
 
                 collection.Delete(Query.Not(Query.In("_id", ids.Select(x => new BsonValue(x)))));
+
+                return TaskHelper.ConfiguredCompletedTask;
             },
             ct
         );
@@ -165,7 +169,7 @@ public sealed class CredentialLiteDbService
                     .ToArray();
                 var response = CreateResponse(request, credentials);
 
-                return response;
+                return TaskHelper.FromResult(response);
             },
             ct
         );
@@ -231,7 +235,7 @@ public sealed class CredentialLiteDbService
         if (request.IsGetSelectors)
         {
             response.Selectors = roots
-                .Select(x => new CredentialSelector
+                .SelectAsSpan(x => new CredentialSelector
                 {
                     Item = x.ToCredential(),
                     Children = GetToDoSelectorItems(credentials, x.Id).ToArray(),
@@ -241,7 +245,7 @@ public sealed class CredentialLiteDbService
 
         if (request.IsGetRoots)
         {
-            response.Roots = roots.Select(x => x.ToCredential()).ToArray();
+            response.Roots = roots.SelectAsSpan(x => x.ToCredential()).ToArray();
         }
 
         foreach (var id in request.GetChildrenIds)
